@@ -22,9 +22,101 @@ body {
   background:
     radial-gradient(ellipse at 20% 20%, rgba(184, 134, 11, 0.06) 0%, transparent 50%),
     radial-gradient(ellipse at 80% 80%, rgba(160, 82, 45, 0.05) 0%, transparent 50%),
+    repeating-linear-gradient(
+      0deg,
+      rgba(62, 44, 32, 0.008) 0px,
+      rgba(62, 44, 32, 0.008) 1px,
+      transparent 1px,
+      transparent 3px
+    ),
     #F5F1E8;
+  background-attachment: fixed;
 }
 
 * {
   box-sizing: border-box;
+}
+
+@layer components {
+  .paper-card {
+    @apply bg-parchment-dark/60 border border-ink/10 rounded-sm;
+    background-image:
+      repeating-linear-gradient(
+        0deg,
+        rgba(62, 44, 32, 0.015) 0px,
+        rgba(62, 44, 32, 0.015) 1px,
+        transparent 1px,
+        transparent 4px
+      );
+  }
+
+  .file-card {
+    @apply relative bg-file-card rounded-sm border border-ink/10 shadow-archive-card;
+  }
+
+  .file-card::before {
+    content: "";
+    @apply absolute top-0 left-4 right-4 h-px bg-ink/15;
+  }
+
+  .stamp {
+    @apply inline-flex items-center justify-center px-4 py-1.5 border-2 border-terracotta/70 text-terracotta font-display font-bold uppercase tracking-wider text-sm;
+    transform: rotate(-2deg);
+  }
+
+  .divider-line {
+    @apply relative h-px bg-ink/20;
+  }
+
+  .divider-line::after {
+    content: "§";
+    @apply absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-canvas px-2 text-gold text-xs;
+  }
+
+  .hint-tape {
+    @apply absolute -top-2 left-1/2 -translate-x-1/2 px-4 py-0.5 bg-gold/30 text-ink/70 text-xs font-serif;
+    transform: translateX(-50%) rotate(-1deg);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+
+  .zoom-lens {
+    cursor: zoom-in;
+  }
+
+  .frame-ornament {
+    @apply relative;
+  }
+
+  .frame-ornament::before,
+  .frame-ornament::after {
+    content: "";
+    @apply absolute w-3 h-3 border-gold/60;
+  }
+
+  .frame-ornament::before {
+    @apply top-0 left-0 border-t-2 border-l-2;
+  }
+
+  .frame-ornament::after {
+    @apply bottom-0 right-0 border-b-2 border-r-2;
+  }
+}
+
+@layer utilities {
+  .text-shadow-soft {
+    text-shadow: 0 1px 2px rgba(62, 44, 32, 0.1);
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: rgba(62, 44, 32, 0.2);
+    border-radius: 2px;
+  }
 }

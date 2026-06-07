@@ -1,67 +1,259 @@
-import { useGameStore } from "@/store/useGameStore";
-import { Check, X, ArrowRight } from "lucide-react";
+import { useEffect, useMemo } from "react";
+import { useGameStore, getDetectiveRank } from "@/store/useGameStore";
+import { audioManager } from "@/utils/audioManager";
+import { Check, X, ArrowRight, FileCheck, AlertTriangle, Award, Sparkles } from "lucide-react";
 
 export default function FeedbackPanel() {
-  const { isAnswered, selectedAnswer, currentPainting, score, total, nextQuestion } = useGameStore();
+  const {
+    isAnswered,
+    currentPainting,
+    totalScore,
+    correctCount,
+    totalAnswered,
+    streak,
+    bestStreak,
+    lastScoreDelta,
+    lastResultCorrect,
+    unlockedClueIndices,
+    confidence,
+    nextQuestion,
+  } = useGameStore();
+
+  useEffect(() => {
+    if (isAnswered) {
+      audioManager.play(lastResultCorrect ? "answer_correct" : "answer_wrong");
+    }
+  }, [isAnswered, lastResultCorrect]);
+
+  const confidenceLabel = useMemo(() => {
+    switch (confidence) {
+      case "low":
+        return "低信心";
+      case "high":
+        return "高信心";
+      case "medium":
+      default:
+        return "中信心";
+    }
+  }, [confidence]);
+
   if (!isAnswered || !currentPainting) return null;
 
-  const isCorrect = selectedAnswer === currentPainting.artist;
+  const isCorrect = lastResultCorrect;
+  const rank = getDetectiveRank(totalScore);
+  const prevRank = getDetectiveRank(Math.max(0, totalScore - (lastScoreDelta ?? 0)));
+  const leveledUp = rank.level > prevRank.level;
 
   return (
-    <div className="animate-[fadeIn_0.3s_ease-out]">
-      <div className={`flex items-center gap-3 p-5 rounded-lg ${isCorrect ? "bg-green-50 border border-green-200" : "bg-red-50 border border-red-200"}`}>
-        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white ${isCorrect ? "bg-green-500" : "bg-terracotta"}`}>
-          {isCorrect ? <Check size={22} strokeWidth={3} /> : <X size={22} strokeWidth={3} />}
-        </div>
-        <div>
-          <div className="font-display text-xl font-semibold" style={{ color: isCorrect ? "#15803d" : "#A0522D" }}>
-            {isCorrect ? "回答正确！" : "回答错误"}
+    <div className="animate-fadeInUp space-y-4">
+      <div
+        className={`relative overflow-hidden file-card ${
+          isCorrect ? "" : "animate-shake"
+        }`}
+      >
+        <div
+          className={`absolute inset-0 opacity-20 ${
+            isCorrect
+              ? "bg-gradient-to-br from-green-500/10 via-transparent to-transparent"
+              : "bg-gradient-to-br from-terracotta/15 via-transparent to-transparent"
+          }`}
+        />
+
+        <div className="relative p-5 md:p-6">
+          <div className="flex items-start gap-4">
+            <div
+              className={`flex-shrink-0 w-14 h-14 rounded-full flex items-center justify-center ${
+                isCorrect ? "bg-green-500" : "bg-terracotta"
+              } ${isCorrect ? "animate-glowPulse" : ""}`}
+            >
+              {isCorrect ? (
+                <Check size={28} strokeWidth={3.5} className="text-white" />
+              ) : (
+                <X size={28} strokeWidth={3.5} className="text-white" />
+              )}
+            </div>
+
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <div
+                  className={`font-display text-2xl md:text-3xl font-bold ${
+                    isCorrect ? "text-success-deep" : "text-error-deep"
+                  }`}
+                >
+                  {isCorrect ? "案件破解" : "误判线索"}
+                </div>
+
+                {isCorrect && (
+                  <div className="stamp animate-stampHit text-xs">
+                    <FileCheck size={12} className="mr-1" />
+                    CASE CLOSED
+                  </div>
+                )}
+              </div>
+
+              {!isCorrect && (
+                <div className="mt-1.5 flex items-center gap-1.5 text-sm text-terracotta font-serif">
+                  <AlertTriangle size={14} />
+                  正确答案是：
+                  <span className="font-bold">{currentPainting.artist}</span>
+                </div>
+              )}
+
+              <div className="mt-3 flex flex-wrap items-center gap-2.5 text-xs">
+                <span className="px-2.5 py-1 rounded-sm bg-ink/5 text-ink/70 font-serif border border-ink/10">
+                  线索：{unlockedClueIndices.length} / {currentPainting.clues.length}
+                </span>
+                <span className="px-2.5 py-1 rounded-sm bg-ink/5 text-ink/70 font-serif border border-ink/10">
+                  信心：{confidenceLabel}
+                </span>
+                {isCorrect && streak >= 2 && (
+                  <span className="px-2.5 py-1 rounded-sm bg-orange-500/10 text-orange-700 font-serif border border-orange-500/20 flex items-center gap-1">
+                    <Sparkles size={12} />
+                    连胜 {streak} 题
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="flex-shrink-0 text-right">
+              <div
+                className={`font-display text-3xl md:text-4xl font-bold tabular-nums animate-scorePop ${
+                  lastScoreDelta > 0 ? "text-green-700" : "text-terracotta"
+                }`}
+                key={lastScoreDelta}
+              >
+                {lastScoreDelta > 0 ? "+" : ""}
+                {lastScoreDelta}
+              </div>
+              <div className="text-[10px] uppercase tracking-wider text-ink/40 font-serif mt-0.5">
+                本次得分
+              </div>
+            </div>
           </div>
-          {!isCorrect && (
-            <div className="text-sm text-ink/70 mt-0.5">
-              正确答案是：<span className="font-semibold text-ink">{currentPainting.artist}</span>
+        </div>
+      </div>
+
+      {leveledUp && isCorrect && (
+        <div className="animate-stampHit relative paper-card rounded-sm p-4 border-2 border-gold/40 bg-gradient-to-r from-gold/5 via-parchment/50 to-gold/5">
+          <div className="flex items-center gap-3">
+            <div className="text-4xl animate-badgeFloat">{rank.badge}</div>
+            <div>
+              <div className="flex items-center gap-2">
+                <Award size={16} className="text-gold" />
+                <span className="font-display text-lg font-bold text-gold">
+                  评级提升！
+                </span>
+              </div>
+              <div className="text-sm text-ink/70 font-serif mt-0.5">
+                {prevRank.title} <span className="mx-1.5">→</span>
+                <span className="font-semibold text-ink">{rank.title}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="file-card overflow-hidden">
+        <div className="px-5 py-3 border-b border-ink/10 bg-ink/5 flex items-center gap-2.5">
+          <div className="w-1 h-5 bg-gold rounded-full" />
+          <h3 className="font-display text-base font-semibold text-ink tracking-wide">
+            结案档案 · 作品信息
+          </h3>
+          <span className="text-[10px] uppercase tracking-widest text-ink/40 font-serif ml-auto">
+            Exhibit Report
+          </span>
+        </div>
+
+        <div className="p-5">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
+            <Field label="作者" value={currentPainting.artist} />
+            <Field label="年代" value={currentPainting.year} />
+            <Field label="画派" value={currentPainting.movement} />
+            <Field label="地区" value={currentPainting.region} />
+          </div>
+
+          <div className="border-t border-ink/10 pt-4">
+            <div className="text-[10px] uppercase tracking-widest text-gold font-serif mb-2">
+              作品背景
+            </div>
+            <p className="text-ink/80 leading-relaxed font-serif text-sm">
+              {currentPainting.description}
+            </p>
+          </div>
+
+          {unlockedClueIndices.length < currentPainting.clues.length && (
+            <div className="mt-4 pt-4 border-t border-ink/10">
+              <div className="text-[10px] uppercase tracking-widest text-ink/40 font-serif mb-2">
+                未使用的线索（结案后可见）
+              </div>
+              <div className="space-y-1.5">
+                {currentPainting.clues
+                  .filter((_, i) => !unlockedClueIndices.includes(i))
+                  .map((c, i) => (
+                    <div
+                      key={i}
+                      className="flex items-start gap-2 text-xs text-ink/50 font-serif"
+                    >
+                      <span className="text-gold/60">▸</span>
+                      <span className="font-semibold text-ink/60">{c.label}：</span>
+                      <span>{c.content}</span>
+                    </div>
+                  ))}
+              </div>
             </div>
           )}
         </div>
       </div>
 
-      <div className="mt-5 p-6 bg-white rounded-lg border border-ink/10 shadow-sm">
-        <div className="flex items-center gap-2 mb-3">
-          <div className="w-1 h-5 bg-gold rounded-full" />
-          <h3 className="font-display text-lg font-semibold text-ink">作品信息</h3>
-        </div>
-
-        <div className="grid grid-cols-3 gap-4 mb-4 text-sm">
-          <div>
-            <div className="text-ink/50 uppercase tracking-wider text-xs mb-1">作者</div>
-            <div className="font-serif text-ink font-medium">{currentPainting.artist}</div>
-          </div>
-          <div>
-            <div className="text-ink/50 uppercase tracking-wider text-xs mb-1">年代</div>
-            <div className="font-serif text-ink font-medium">{currentPainting.year}</div>
-          </div>
-          <div>
-            <div className="text-ink/50 uppercase tracking-wider text-xs mb-1">画派</div>
-            <div className="font-serif text-ink font-medium">{currentPainting.movement}</div>
-          </div>
-        </div>
-
-        <p className="text-ink/80 leading-relaxed text-sm border-t border-ink/10 pt-4">
-          {currentPainting.description}
-        </p>
-      </div>
-
       <button
-        onClick={nextQuestion}
-        className="mt-6 w-full py-4 px-6 rounded-lg bg-gold hover:bg-gold-light text-white font-serif text-lg font-medium transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg flex items-center justify-center gap-2"
+        onClick={() => {
+          audioManager.play("next_question");
+          nextQuestion();
+        }}
+        className="w-full group relative py-4 px-6 rounded-sm bg-gold hover:bg-gold-light text-white font-serif text-lg font-medium transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg flex items-center justify-center gap-2 overflow-hidden"
       >
-        下一题
-        <ArrowRight size={20} strokeWidth={2.5} />
+        <span className="absolute inset-0 bg-gradient-to-r from-gold via-gold-light to-gold opacity-0 group-hover:opacity-100 transition-opacity" />
+        <span className="relative flex items-center gap-2">
+          调查下一案
+          <ArrowRight
+            size={20}
+            strokeWidth={2.5}
+            className="group-hover:translate-x-1 transition-transform"
+          />
+        </span>
       </button>
 
-      <div className="mt-4 text-center text-sm text-ink/50">
-        当前得分：{score} / {total}
+      <div className="flex items-center justify-center gap-4 text-xs text-ink/50 font-serif py-1">
+        <span>
+          累计得分：<span className="font-bold text-gold tabular-nums">{totalScore}</span>
+        </span>
+        <span className="w-px h-3 bg-ink/20" />
+        <span>
+          战绩：
+          <span className="font-semibold text-ink tabular-nums">
+            {correctCount} / {totalAnswered}
+          </span>
+        </span>
+        {bestStreak >= 3 && (
+          <>
+            <span className="w-px h-3 bg-ink/20" />
+            <span>
+              最佳连胜：<span className="font-semibold text-orange-600">{bestStreak}</span>
+            </span>
+          </>
+        )}
       </div>
+    </div>
+  );
+}
+
+function Field({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <div className="text-[10px] uppercase tracking-widest text-ink/50 mb-1 font-serif">
+        {label}
+      </div>
+      <div className="font-serif text-ink font-medium">{value}</div>
     </div>
   );
 }

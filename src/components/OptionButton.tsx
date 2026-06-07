@@ -1,15 +1,22 @@
 import { useGameStore } from "@/store/useGameStore";
-import { Check, X } from "lucide-react";
+import { audioManager } from "@/utils/audioManager";
+import { Check, X, AlertCircle } from "lucide-react";
 
 interface OptionButtonProps {
   artist: string;
 }
 
 export default function OptionButton({ artist }: OptionButtonProps) {
-  const { isAnswered, selectedAnswer, currentPainting, submitAnswer } = useGameStore();
+  const {
+    isAnswered,
+    selectedAnswer,
+    currentPainting,
+    submitAnswer,
+  } = useGameStore();
+
   const correctAnswer = currentPainting?.artist;
 
-  let variant: "default" | "correct" | "wrong" | "correctReveal" = "default";
+  let variant: "default" | "selected" | "correct" | "wrong" | "correctReveal" = "default";
 
   if (isAnswered) {
     if (artist === correctAnswer) {
@@ -18,15 +25,24 @@ export default function OptionButton({ artist }: OptionButtonProps) {
       variant = "wrong";
     }
   } else if (selectedAnswer === artist) {
-    variant = "correct";
+    variant = "selected";
   }
 
-  const base = "group relative w-full py-4 px-6 rounded-lg border-2 font-serif text-lg text-left transition-all duration-200";
+  const handleClick = () => {
+    if (isAnswered) return;
+    audioManager.play("option_select");
+    submitAnswer(artist);
+  };
+
+  const base =
+    "group relative w-full py-3.5 md:py-4 px-5 rounded-sm border-2 font-serif text-left transition-all duration-200 overflow-hidden";
   const styles: Record<string, string> = {
-    default: "bg-white border-ink/15 text-ink hover:border-gold hover:-translate-y-0.5 hover:shadow-md cursor-pointer",
+    default:
+      "bg-white/70 border-ink/15 text-ink hover:border-gold hover:bg-parchment/50 hover:-translate-y-0.5 hover:shadow-md cursor-pointer",
+    selected: "bg-gold/10 border-gold text-ink",
     correct: "bg-green-50 border-green-500 text-green-800",
-    wrong: "bg-red-50 border-terracotta text-terracotta",
-    correctReveal: "bg-green-50 border-green-500 text-green-800",
+    wrong: "bg-terracotta/10 border-terracotta text-error-deep animate-shake",
+    correctReveal: "bg-green-50 border-green-500 text-success-deep",
   };
 
   const iconBg: Record<string, string> = {
@@ -37,17 +53,64 @@ export default function OptionButton({ artist }: OptionButtonProps) {
   return (
     <button
       className={`${base} ${styles[variant]}`}
-      onClick={() => !isAnswered && submitAnswer(artist)}
+      onClick={handleClick}
       disabled={isAnswered}
     >
-      <div className="flex items-center justify-between">
-        <span>{artist}</span>
+      <div className="absolute inset-0 bg-gradient-to-r from-gold/0 via-gold/5 to-gold/0 opacity-0 group-hover:opacity-100 transition-opacity" />
+
+      <div className="relative flex items-center justify-between">
+        <div className="flex items-center gap-3 min-w-0">
+          <span
+            className={`flex-shrink-0 w-7 h-7 rounded-full border-2 flex items-center justify-center text-xs font-bold font-display ${
+              variant === "correctReveal"
+                ? "bg-green-500 text-white border-green-500"
+                : variant === "wrong"
+                ? "bg-terracotta text-white border-terracotta"
+                : variant === "selected"
+                ? "bg-gold text-white border-gold"
+                : "bg-white border-ink/20 text-ink/40 group-hover:border-gold group-hover:text-gold"
+            }`}
+          >
+            {variant === "correctReveal" && <Check size={14} strokeWidth={3} />}
+            {variant === "wrong" && <X size={14} strokeWidth={3} />}
+          </span>
+          <span className="truncate text-base md:text-lg">{artist}</span>
+        </div>
+
         {(variant === "correctReveal" || variant === "wrong") && (
-          <span className={`w-7 h-7 rounded-full ${iconBg[variant]} flex items-center justify-center text-white`}>
-            {variant === "correctReveal" ? <Check size={16} strokeWidth={3} /> : <X size={16} strokeWidth={3} />}
+          <span
+            className={`w-8 h-8 rounded-full ${iconBg[variant]} flex items-center justify-center text-white shadow-sm animate-fadeInScale`}
+          >
+            {variant === "correctReveal" ? (
+              <Check size={18} strokeWidth={3} />
+            ) : (
+              <X size={18} strokeWidth={3} />
+            )}
           </span>
         )}
       </div>
     </button>
+  );
+}
+
+export function SubmitHint() {
+  const { isAnswered, confidence } = useGameStore();
+
+  if (isAnswered) return null;
+
+  return (
+    <div className="text-center mt-4 animate-fadeInUp">
+      {!confidence ? (
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-terracotta/10 border border-terracotta/30 text-terracotta text-xs font-serif">
+          <AlertCircle size={14} />
+          请先选择信心等级，再点击作者提交答案
+        </div>
+      ) : (
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gold/10 border border-gold/30 text-gold text-xs font-serif">
+          <Check size={14} strokeWidth={3} />
+          已设置信心等级，请点击上方作者选项提交
+        </div>
+      )}
+    </div>
   );
 }
