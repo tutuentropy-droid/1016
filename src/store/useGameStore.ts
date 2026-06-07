@@ -8,6 +8,7 @@ import {
 } from "@/utils/gameLogic";
 
 export type Confidence = "low" | "medium" | "high";
+export type CasePhase = "opening" | "briefing" | "investigating" | "answered";
 
 interface GameState {
   currentPainting: Painting | null;
@@ -24,6 +25,11 @@ interface GameState {
   lastScoreDelta: number;
   lastResultCorrect: boolean | null;
   recentPaintingIds: string[];
+  casePhase: CasePhase;
+  firstCase: boolean;
+  focusedDetailIndex: number | null;
+  setCasePhase: (phase: CasePhase) => void;
+  setFocusedDetail: (index: number | null) => void;
   nextQuestion: () => void;
   unlockClue: (index: number) => void;
   setConfidence: (level: Confidence) => void;
@@ -45,9 +51,15 @@ export const useGameStore = create<GameState>((set, get) => ({
   lastScoreDelta: 0,
   lastResultCorrect: null,
   recentPaintingIds: [],
+  casePhase: "opening",
+  firstCase: true,
+  focusedDetailIndex: null,
+
+  setCasePhase: (phase: CasePhase) => set({ casePhase: phase }),
+  setFocusedDetail: (index: number | null) => set({ focusedDetailIndex: index }),
 
   nextQuestion: () => {
-    const { recentPaintingIds } = get();
+    const { recentPaintingIds, firstCase } = get();
     const painting = pickRandomPainting(recentPaintingIds);
     const options = generateOptionsByDifficulty(painting.artist, painting.difficulty);
     const newRecent = [...recentPaintingIds, painting.id].slice(-5);
@@ -61,15 +73,23 @@ export const useGameStore = create<GameState>((set, get) => ({
       lastScoreDelta: 0,
       lastResultCorrect: null,
       recentPaintingIds: newRecent,
+      casePhase: firstCase ? "opening" : "briefing",
+      firstCase: false,
+      focusedDetailIndex: null,
     });
   },
 
   unlockClue: (index: number) => {
-    const { unlockedClueIndices, isAnswered } = get();
+    const { unlockedClueIndices, isAnswered, currentPainting } = get();
     if (isAnswered) return;
     if (unlockedClueIndices.includes(index)) return;
+    const clue = currentPainting?.clues[index];
+    const shouldFocusDetail = clue?.type === "key" || clue?.type === "style";
     set({
       unlockedClueIndices: [...unlockedClueIndices, index],
+      focusedDetailIndex: shouldFocusDetail && currentPainting?.zoomRegions?.length
+        ? Math.min(index, currentPainting.zoomRegions.length - 1)
+        : null,
     });
   },
 
@@ -106,6 +126,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     set({
       selectedAnswer: answer,
       isAnswered: true,
+      casePhase: "answered",
       totalScore: Math.max(0, totalScore + delta),
       correctCount: isCorrect ? correctCount + 1 : correctCount,
       totalAnswered: totalAnswered + 1,

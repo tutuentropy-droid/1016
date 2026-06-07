@@ -1,7 +1,20 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useGameStore, getDetectiveRank } from "@/store/useGameStore";
 import { audioManager } from "@/utils/audioManager";
-import { Check, X, ArrowRight, FileCheck, AlertTriangle, Award, Sparkles } from "lucide-react";
+import { artistInfos } from "@/data/paintings";
+import {
+  Check,
+  X,
+  ArrowRight,
+  FileCheck,
+  AlertTriangle,
+  Award,
+  Sparkles,
+  Network,
+  Brain,
+  User,
+  Link2,
+} from "lucide-react";
 
 export default function FeedbackPanel() {
   const {
@@ -16,12 +29,22 @@ export default function FeedbackPanel() {
     lastResultCorrect,
     unlockedClueIndices,
     confidence,
+    selectedAnswer,
     nextQuestion,
   } = useGameStore();
+
+  const [showConnections, setShowConnections] = useState(false);
 
   useEffect(() => {
     if (isAnswered) {
       audioManager.play(lastResultCorrect ? "answer_correct" : "answer_wrong");
+      if (lastResultCorrect) {
+        setTimeout(() => audioManager.play("stamp_hit"), 400);
+      }
+      const t = setTimeout(() => setShowConnections(true), 600);
+      return () => clearTimeout(t);
+    } else {
+      setShowConnections(false);
     }
   }, [isAnswered, lastResultCorrect]);
 
@@ -44,13 +67,87 @@ export default function FeedbackPanel() {
   const prevRank = getDetectiveRank(Math.max(0, totalScore - (lastScoreDelta ?? 0)));
   const leveledUp = rank.level > prevRank.level;
 
+  const correctArtistInfo = artistInfos.find((a) => a.name === currentPainting.artist);
+  const selectedArtistInfo = selectedAnswer
+    ? artistInfos.find((a) => a.name === selectedAnswer)
+    : null;
+
+  const misleadingReasons = useMemo(() => {
+    if (isCorrect || !selectedArtistInfo || !correctArtistInfo) return [];
+    const reasons: string[] = [];
+    if (selectedArtistInfo.movement.split(/[\/、]/).some((m) =>
+      correctArtistInfo.movement.includes(m.trim()) ||
+      currentPainting.movement.includes(m.trim())
+    )) {
+      reasons.push(`「${selectedArtistInfo.name}」同属相近艺术流派（${selectedArtistInfo.movement}），风格表现有相似之处`);
+    }
+    if (selectedArtistInfo.region.split(/[\/、]/).some((r) =>
+      correctArtistInfo.region.includes(r.trim())
+    )) {
+      reasons.push(`两位艺术家均活跃于 ${selectedArtistInfo.region} 地区，存在地域文化影响的重叠`);
+    }
+    const sEra = selectedArtistInfo.era.match(/\d{4}/g);
+    const cEra = correctArtistInfo.era.match(/\d{4}/g);
+    if (sEra && cEra) {
+      const sEnd = parseInt(sEra[1] || sEra[0]);
+      const cStart = parseInt(cEra[0]);
+      if (Math.abs(sEnd - cStart) < 80) {
+        reasons.push(`创作年代较为接近（${selectedArtistInfo.era} vs ${correctArtistInfo.era}），时代审美取向有交集`);
+      }
+    }
+    if (reasons.length === 0) {
+      reasons.push(`这幅作品的某些视觉元素（构图、色彩、题材）容易让人联想到 ${selectedArtistInfo.name} 的创作风格`);
+      reasons.push(`建议重点关注笔触特征、色彩偏好和典型题材来区分两位艺术家`);
+    }
+    return reasons;
+  }, [isCorrect, selectedArtistInfo, correctArtistInfo, currentPainting]);
+
   return (
-    <div className="animate-fadeInUp space-y-4">
+    <div className="animate-fadeInUp space-y-4" style={{ animationDelay: "100ms" }}>
       <div
         className={`relative overflow-hidden file-card ${
           isCorrect ? "" : "animate-shake"
         }`}
       >
+        {isCorrect && showConnections && (
+          <svg
+            className="absolute inset-0 w-full h-full pointer-events-none opacity-60"
+            preserveAspectRatio="none"
+          >
+            <line
+              x1="15%"
+              y1="30%"
+              x2="75%"
+              y2="30%"
+              stroke="#D4A017"
+              strokeWidth="1.5"
+              className="clue-string-line"
+              style={{ animationDelay: "0.1s" }}
+            />
+            <line
+              x1="15%"
+              y1="50%"
+              x2="70%"
+              y2="55%"
+              stroke="#D4A017"
+              strokeWidth="1.5"
+              className="clue-string-line"
+              style={{ animationDelay: "0.3s" }}
+            />
+            <line
+              x1="20%"
+              y1="70%"
+              x2="65%"
+              y2="75%"
+              stroke="#B8860B"
+              strokeWidth="1"
+              strokeDasharray="3 3"
+              className="clue-string-line"
+              style={{ animationDelay: "0.5s" }}
+            />
+          </svg>
+        )}
+
         <div
           className={`absolute inset-0 opacity-20 ${
             isCorrect
@@ -133,8 +230,93 @@ export default function FeedbackPanel() {
         </div>
       </div>
 
+      {!isCorrect && misleadingReasons.length > 0 && (
+        <div className="relative file-card overflow-hidden animate-slideInRight" style={{ animationDelay: "300ms" }}>
+          <div className="px-5 py-3 border-b border-terracotta/20 bg-terracotta/5 flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-full bg-terracotta/20 flex items-center justify-center">
+              <Brain size={16} className="text-terracotta" strokeWidth={2.2} />
+            </div>
+            <div>
+              <div className="font-display text-base font-semibold text-terracotta tracking-wide">
+                误判分析
+              </div>
+              <div className="text-[10px] text-terracotta/60 uppercase tracking-widest font-serif">
+                Misjudgment Analysis
+              </div>
+            </div>
+          </div>
+          <div className="p-4 md:p-5 space-y-2.5">
+            {misleadingReasons.map((reason, i) => (
+              <div
+                key={i}
+                className="flex items-start gap-2.5 animate-fadeInUp"
+                style={{ animationDelay: `${400 + i * 120}ms` }}
+              >
+                <div className="flex-shrink-0 mt-0.5 w-5 h-5 rounded-full bg-terracotta/15 border border-terracotta/30 flex items-center justify-center">
+                  <span className="text-[10px] font-bold text-terracotta">{i + 1}</span>
+                </div>
+                <p className="text-sm text-ink/80 leading-relaxed font-serif">
+                  {reason}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {isCorrect && correctArtistInfo && (
+        <div className="relative file-card overflow-hidden animate-slideInLeft" style={{ animationDelay: "300ms" }}>
+          <div className="absolute top-0 right-0 w-40 h-40 opacity-20 pointer-events-none"
+            style={{
+              background: "radial-gradient(circle at top right, rgba(212,160,23,0.6) 0%, transparent 70%)",
+            }}
+          />
+          <div className="px-5 py-3 border-b border-gold/20 bg-gold/5 flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-full bg-gold/20 flex items-center justify-center animate-glowPulse">
+              <User size={16} className="text-gold" strokeWidth={2.2} />
+            </div>
+            <div className="flex items-center gap-2">
+              <div>
+                <div className="font-display text-base font-semibold text-gold tracking-wide">
+                  艺术家档案
+                </div>
+                <div className="text-[10px] text-gold/60 uppercase tracking-widest font-serif">
+                  Artist Profile · Confirmed
+                </div>
+              </div>
+              {showConnections && (
+                <Network size={14} className="text-gold animate-badgeFloat" />
+              )}
+            </div>
+          </div>
+          <div className="p-4 md:p-5">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Field label="姓名" value={correctArtistInfo.name} highlight />
+              <Field label="年代" value={correctArtistInfo.era} />
+              <Field label="地区" value={correctArtistInfo.region} />
+              <Field label="流派" value={correctArtistInfo.movement} />
+            </div>
+            {showConnections && (
+              <div className="mt-4 pt-4 border-t border-gold/20 flex items-center gap-2 text-xs text-gold/70 font-serif animate-fadeInScale">
+                <Link2 size={14} />
+                <span>
+                  已关联 {unlockedClueIndices.length} 条线索与艺术家档案成功匹配
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {leveledUp && isCorrect && (
-        <div className="animate-stampHit relative paper-card rounded-sm p-4 border-2 border-gold/40 bg-gradient-to-r from-gold/5 via-parchment/50 to-gold/5">
+        <div
+          className="animate-stampHit relative paper-card rounded-sm p-4 border-2 border-gold/40 bg-gradient-to-r from-gold/5 via-parchment/50 to-gold/5"
+          style={{ animationDelay: "500ms" }}
+        >
+          {(() => {
+            audioManager.play("level_up");
+            return null;
+          })()}
           <div className="flex items-center gap-3">
             <div className="text-4xl animate-badgeFloat">{rank.badge}</div>
             <div>
@@ -153,7 +335,7 @@ export default function FeedbackPanel() {
         </div>
       )}
 
-      <div className="file-card overflow-hidden">
+      <div className="file-card overflow-hidden animate-fadeInUp" style={{ animationDelay: "400ms" }}>
         <div className="px-5 py-3 border-b border-ink/10 bg-ink/5 flex items-center gap-2.5">
           <div className="w-1 h-5 bg-gold rounded-full" />
           <h3 className="font-display text-base font-semibold text-ink tracking-wide">
@@ -208,11 +390,21 @@ export default function FeedbackPanel() {
       <button
         onClick={() => {
           audioManager.play("next_question");
+          audioManager.play("paper_flip");
           nextQuestion();
         }}
-        className="w-full group relative py-4 px-6 rounded-sm bg-gold hover:bg-gold-light text-white font-serif text-lg font-medium transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg flex items-center justify-center gap-2 overflow-hidden"
+        className="w-full group relative py-4 px-6 rounded-sm bg-gold hover:bg-gold-light text-white font-serif text-lg font-medium transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg flex items-center justify-center gap-2 overflow-hidden animate-fadeInUp"
+        style={{ animationDelay: "500ms" }}
       >
         <span className="absolute inset-0 bg-gradient-to-r from-gold via-gold-light to-gold opacity-0 group-hover:opacity-100 transition-opacity" />
+        <span className="absolute inset-0 overflow-hidden pointer-events-none">
+          <span
+            className="absolute inset-y-0 left-0 w-1/3 -translate-x-full group-hover:translate-x-[300%] transition-transform duration-1000"
+            style={{
+              background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)",
+            }}
+          />
+        </span>
         <span className="relative flex items-center gap-2">
           调查下一案
           <ArrowRight
@@ -223,7 +415,7 @@ export default function FeedbackPanel() {
         </span>
       </button>
 
-      <div className="flex items-center justify-center gap-4 text-xs text-ink/50 font-serif py-1">
+      <div className="flex items-center justify-center gap-4 text-xs text-ink/50 font-serif py-1 animate-fadeInUp" style={{ animationDelay: "600ms" }}>
         <span>
           累计得分：<span className="font-bold text-gold tabular-nums">{totalScore}</span>
         </span>
@@ -247,13 +439,19 @@ export default function FeedbackPanel() {
   );
 }
 
-function Field({ label, value }: { label: string; value: string }) {
+function Field({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
   return (
     <div>
       <div className="text-[10px] uppercase tracking-widest text-ink/50 mb-1 font-serif">
         {label}
       </div>
-      <div className="font-serif text-ink font-medium">{value}</div>
+      <div
+        className={`font-serif ${
+          highlight ? "text-gold font-bold glow-text-gold" : "text-ink font-medium"
+        }`}
+      >
+        {value}
+      </div>
     </div>
   );
 }

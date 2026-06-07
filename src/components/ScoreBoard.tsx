@@ -10,17 +10,18 @@ export default function ScoreBoard() {
   const multiplier = streak >= 5 ? 1.5 : streak >= 3 ? 1.2 : 1.0;
 
   return (
-    <div className="paper-card rounded-sm overflow-hidden">
+    <div className="paper-card rounded-sm overflow-hidden animate-fadeInUp">
       <div className="p-4 md:p-5">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <div className="relative w-12 h-12 rounded-full bg-file-card border-2 border-gold/40 flex items-center justify-center animate-badgeFloat">
               <span className="text-2xl">{rank.badge}</span>
               {rank.level >= 3 && (
-                <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-gold text-white text-[10px] font-bold flex items-center justify-center shadow-sm">
+                <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-gold text-white text-[10px] font-bold flex items-center justify-center shadow-sm animate-markerPulse">
                   {rank.level}
                 </div>
               )}
+              <div className="absolute inset-0 rounded-full animate-glowPulse pointer-events-none" style={{ boxShadow: "0 0 0 0 rgba(212,160,23,0.3)" }} />
             </div>
             <div>
               <div className="font-display text-lg font-bold text-ink leading-tight">
@@ -34,7 +35,7 @@ export default function ScoreBoard() {
 
           <div className="text-right">
             <div className="flex items-baseline gap-1 justify-end">
-              <span className="font-display text-4xl font-bold text-gold tabular-nums tracking-tight">
+              <span className="font-display text-4xl font-bold text-gold tabular-nums tracking-tight glow-text-gold">
                 {totalScore}
               </span>
               <span className="text-xs text-ink/40 font-serif mb-1">pts</span>
@@ -56,7 +57,7 @@ export default function ScoreBoard() {
         <div className="divider-line my-4" />
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div className="flex flex-col items-center py-2">
+          <div className="flex flex-col items-center py-2 transition-transform hover:scale-105 duration-200">
             <Target size={16} className="text-gold/80 mb-1" />
             <div className="font-display text-2xl font-bold text-ink tabular-nums">
               {correctCount}
@@ -65,7 +66,7 @@ export default function ScoreBoard() {
               答对
             </div>
           </div>
-          <div className="flex flex-col items-center py-2">
+          <div className="flex flex-col items-center py-2 transition-transform hover:scale-105 duration-200">
             <Medal size={16} className="text-ink/50 mb-1" />
             <div className="font-display text-2xl font-bold text-ink tabular-nums">
               {totalAnswered}
@@ -74,7 +75,7 @@ export default function ScoreBoard() {
               总题数
             </div>
           </div>
-          <div className="flex flex-col items-center py-2">
+          <div className="flex flex-col items-center py-2 transition-transform hover:scale-105 duration-200">
             <Trophy size={16} className="text-terracotta/80 mb-1" />
             <div className="font-display text-2xl font-bold text-ink tabular-nums">
               {accuracy}%
@@ -83,13 +84,13 @@ export default function ScoreBoard() {
               正确率
             </div>
           </div>
-          <div className="flex flex-col items-center py-2 relative">
+          <div className="flex flex-col items-center py-2 relative transition-transform hover:scale-105 duration-200">
             <Flame
               size={16}
-              className={`mb-1 ${streak >= 3 ? "text-orange-500" : "text-ink/50"}`}
+              className={`mb-1 ${streak >= 3 ? "text-orange-500" : "text-ink/50"} transition-colors duration-300`}
             />
             <div
-              className={`font-display text-2xl font-bold tabular-nums ${
+              className={`font-display text-2xl font-bold tabular-nums transition-colors duration-300 ${
                 streak >= 5 ? "text-orange-600" : streak >= 3 ? "text-orange-500" : "text-ink"
               }`}
             >

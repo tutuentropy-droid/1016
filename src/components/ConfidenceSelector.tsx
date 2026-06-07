@@ -55,6 +55,7 @@ export default function ConfidenceSelector() {
   const handleSet = (level: Confidence) => {
     setConfidence(level);
     audioManager.play("confidence_change");
+    audioManager.play("paper_flip");
   };
 
   if (isAnswered) return null;
@@ -62,7 +63,7 @@ export default function ConfidenceSelector() {
   const baseScore = 100 - unlockedClueIndices.length * 20;
 
   return (
-    <div className="paper-card rounded-sm overflow-hidden">
+    <div className="paper-card rounded-sm overflow-hidden animate-fadeInUp">
       <div className="px-5 py-3 border-b border-ink/10 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
           <div className="w-px h-5 bg-gold" />
@@ -91,16 +92,28 @@ export default function ConfidenceSelector() {
             <button
               key={cfg.value}
               onClick={() => handleSet(cfg.value)}
-              className={`relative flex flex-col items-center gap-1 py-3 px-2 rounded-sm border-2 transition-all duration-200 ${
+              onMouseEnter={() => audioManager.play("option_hover")}
+              className={`relative flex flex-col items-center gap-1 py-3 px-2 rounded-sm border-2 transition-all duration-200 overflow-hidden ${
                 isActive
-                  ? `${cfg.activeBg} ${cfg.activeBorder} ${cfg.activeText} scale-[1.02]`
+                  ? `${cfg.activeBg} ${cfg.activeBorder} ${cfg.activeText} scale-[1.02] shadow-md`
                   : "bg-white/40 border-ink/10 text-ink/60 hover:border-ink/25 hover:bg-white/70"
               }`}
             >
+              {isActive && (
+                <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                  <div
+                    className="absolute inset-y-0 left-0 w-1/3 -translate-x-full"
+                    style={{
+                      background: `linear-gradient(90deg, transparent, ${cfg.value === 'low' ? 'rgba(62,44,32,0.08)' : cfg.value === 'high' ? 'rgba(160,82,45,0.1)' : 'rgba(184,134,11,0.12)'}, transparent)`,
+                      animation: "timelineProgress 2s ease-in-out infinite",
+                    }}
+                  />
+                </div>
+              )}
               <Icon
                 size={20}
                 strokeWidth={isActive ? 2.5 : 2}
-                className={isActive ? cfg.activeText : cfg.accent}
+                className={`${isActive ? cfg.activeText : cfg.accent} transition-transform duration-200 ${isActive ? "scale-110" : ""}`}
               />
               <div
                 className={`text-sm font-semibold font-display ${
@@ -118,7 +131,7 @@ export default function ConfidenceSelector() {
                 ×{cfg.multiplier}
               </div>
               {isActive && (
-                <div className={`absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 rounded-full ${cfg.activeBorder.replace('border-', 'bg-')}`} />
+                <div className={`absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 rounded-full ${cfg.activeBorder.replace('border-', 'bg-')} animate-markerPulse`} />
               )}
             </button>
           );
@@ -134,7 +147,7 @@ export default function ConfidenceSelector() {
             {confidence === "medium" && "标准奖惩比例"}
             {confidence === "high" && "答错扣分翻倍"}
           </span>
-          <span className="font-display font-bold text-gold tabular-nums">
+          <span className="font-display font-bold text-gold tabular-nums glow-text-gold">
             +{Math.round(Math.max(20, baseScore) * getConfidenceMultiplier(confidence))}
           </span>
         </div>
