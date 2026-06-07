@@ -14,11 +14,23 @@ export interface ZoomRegion {
   label: string;
 }
 
+export type RelationType = "teacher_student" | "friend" | "rival" | "influenced" | "contemporary" | "same_movement";
+
+export interface ArtistRelation {
+  source: string;
+  target: string;
+  type: RelationType;
+  description: string;
+}
+
 export interface ArtistInfo {
   name: string;
   era: string;
   region: string;
   movement: string;
+  birthYear?: number;
+  deathYear?: number;
+  country?: string;
 }
 
 export interface Painting {
@@ -29,6 +41,8 @@ export interface Painting {
   year: string;
   movement: string;
   region: string;
+  country: string;
+  decade: number;
   imageUrl: string;
   description: string;
   difficulty: Difficulty;
@@ -37,22 +51,44 @@ export interface Painting {
 }
 
 export const artistInfos: ArtistInfo[] = [
-  { name: "文森特·梵高", era: "1853-1890", region: "荷兰/法国", movement: "后印象派" },
-  { name: "列奥纳多·达·芬奇", era: "1452-1519", region: "意大利", movement: "文艺复兴盛期" },
-  { name: "克劳德·莫奈", era: "1840-1926", region: "法国", movement: "印象派" },
-  { name: "巴勃罗·毕加索", era: "1881-1973", region: "西班牙/法国", movement: "立体主义" },
-  { name: "约翰内斯·维米尔", era: "1632-1675", region: "荷兰", movement: "荷兰黄金时代" },
-  { name: "萨尔瓦多·达利", era: "1904-1989", region: "西班牙", movement: "超现实主义" },
-  { name: "古斯塔夫·克里姆特", era: "1862-1918", region: "奥地利", movement: "维也纳分离派" },
-  { name: "米开朗基罗", era: "1475-1564", region: "意大利", movement: "文艺复兴盛期" },
-  { name: "爱德华·蒙克", era: "1863-1944", region: "挪威", movement: "表现主义" },
-  { name: "伦勃朗", era: "1606-1669", region: "荷兰", movement: "荷兰黄金时代" },
-  { name: "保罗·塞尚", era: "1839-1906", region: "法国", movement: "后印象派" },
-  { name: "亨利·马蒂斯", era: "1869-1954", region: "法国", movement: "野兽派" },
-  { name: "皮埃尔·奥古斯特·雷诺阿", era: "1841-1919", region: "法国", movement: "印象派" },
-  { name: "威廉·透纳", era: "1775-1851", region: "英国", movement: "浪漫主义" },
-  { name: "迭戈·委拉斯开兹", era: "1599-1660", region: "西班牙", movement: "巴洛克" },
+  { name: "文森特·梵高", era: "1853-1890", region: "荷兰/法国", movement: "后印象派", birthYear: 1853, deathYear: 1890, country: "荷兰" },
+  { name: "列奥纳多·达·芬奇", era: "1452-1519", region: "意大利", movement: "文艺复兴盛期", birthYear: 1452, deathYear: 1519, country: "意大利" },
+  { name: "克劳德·莫奈", era: "1840-1926", region: "法国", movement: "印象派", birthYear: 1840, deathYear: 1926, country: "法国" },
+  { name: "巴勃罗·毕加索", era: "1881-1973", region: "西班牙/法国", movement: "立体主义", birthYear: 1881, deathYear: 1973, country: "西班牙" },
+  { name: "约翰内斯·维米尔", era: "1632-1675", region: "荷兰", movement: "荷兰黄金时代", birthYear: 1632, deathYear: 1675, country: "荷兰" },
+  { name: "萨尔瓦多·达利", era: "1904-1989", region: "西班牙", movement: "超现实主义", birthYear: 1904, deathYear: 1989, country: "西班牙" },
+  { name: "古斯塔夫·克里姆特", era: "1862-1918", region: "奥地利", movement: "维也纳分离派", birthYear: 1862, deathYear: 1918, country: "奥地利" },
+  { name: "米开朗基罗", era: "1475-1564", region: "意大利", movement: "文艺复兴盛期", birthYear: 1475, deathYear: 1564, country: "意大利" },
+  { name: "爱德华·蒙克", era: "1863-1944", region: "挪威", movement: "表现主义", birthYear: 1863, deathYear: 1944, country: "挪威" },
+  { name: "伦勃朗", era: "1606-1669", region: "荷兰", movement: "荷兰黄金时代", birthYear: 1606, deathYear: 1669, country: "荷兰" },
+  { name: "保罗·塞尚", era: "1839-1906", region: "法国", movement: "后印象派", birthYear: 1839, deathYear: 1906, country: "法国" },
+  { name: "亨利·马蒂斯", era: "1869-1954", region: "法国", movement: "野兽派", birthYear: 1869, deathYear: 1954, country: "法国" },
+  { name: "皮埃尔·奥古斯特·雷诺阿", era: "1841-1919", region: "法国", movement: "印象派", birthYear: 1841, deathYear: 1919, country: "法国" },
+  { name: "威廉·透纳", era: "1775-1851", region: "英国", movement: "浪漫主义", birthYear: 1775, deathYear: 1851, country: "英国" },
+  { name: "迭戈·委拉斯开兹", era: "1599-1660", region: "西班牙", movement: "巴洛克", birthYear: 1599, deathYear: 1660, country: "西班牙" },
 ];
+
+export const artistRelations: ArtistRelation[] = [
+  { source: "文森特·梵高", target: "保罗·塞尚", type: "influenced", description: "梵高深受塞尚色彩理论的影响，塞尚被誉为\"后印象派之父\"" },
+  { source: "文森特·梵高", target: "克劳德·莫奈", type: "same_movement", description: "同属印象派/后印象派脉络，梵高学习莫奈的色彩运用" },
+  { source: "文森特·梵高", target: "爱德华·蒙克", type: "influenced", description: "梵高的表现性笔触深刻影响了蒙克的表现主义探索" },
+  { source: "克劳德·莫奈", target: "皮埃尔·奥古斯特·雷诺阿", type: "friend", description: "印象派的核心奠基人，曾一起在户外写生作画多年" },
+  { source: "克劳德·莫奈", target: "保罗·塞尚", type: "contemporary", description: "印象派展览的重要参与者，共同推动现代艺术革命" },
+  { source: "皮埃尔·奥古斯特·雷诺阿", target: "保罗·塞尚", type: "contemporary", description: "印象派的代表人物，共同参展首届印象派画展" },
+  { source: "保罗·塞尚", target: "巴勃罗·毕加索", type: "influenced", description: "毕加索曾说\"塞尚是我们所有人的父亲\"，直接启发了立体主义" },
+  { source: "保罗·塞尚", target: "亨利·马蒂斯", type: "influenced", description: "塞尚的形式探索对马蒂斯的野兽派有重要启发" },
+  { source: "巴勃罗·毕加索", target: "亨利·马蒂斯", type: "rival", description: "20世纪初两位最伟大的艺术家，亦敌亦友，相互竞争又彼此欣赏" },
+  { source: "巴勃罗·毕加索", target: "萨尔瓦多·达利", type: "influenced", description: "达利年轻时崇拜毕加索，立体主义是超现实主义的重要源头" },
+  { source: "爱德华·蒙克", target: "古斯塔夫·克里姆特", type: "contemporary", description: "19世纪末欧洲表现主义/象征主义的代表人物" },
+  { source: "爱德华·蒙克", target: "萨尔瓦多·达利", type: "influenced", description: "蒙克的心理表现为超现实主义探索潜意识开辟了道路" },
+  { source: "列奥纳多·达·芬奇", target: "米开朗基罗", type: "rival", description: "文艺复兴三杰中的两位，佛罗伦萨的竞争对手，个性迥异" },
+  { source: "约翰内斯·维米尔", target: "伦勃朗", type: "contemporary", description: "荷兰黄金时代的两位代表画家，伦勃朗是当时最受尊敬的前辈" },
+  { source: "迭戈·委拉斯开兹", target: "伦勃朗", type: "contemporary", description: "17世纪巴洛克时代的两位光影大师，分别代表西班牙与荷兰画派" },
+  { source: "威廉·透纳", target: "克劳德·莫奈", type: "influenced", description: "透纳的光线与氛围探索为印象派奠定了基础" },
+  { source: "亨利·马蒂斯", target: "古斯塔夫·克里姆特", type: "contemporary", description: "20世纪初装饰性与色彩解放的重要探索者" },
+];
+
+export const allCountries = Array.from(new Set(artistInfos.map(a => a.country).filter(Boolean))) as string[];
 
 export const paintings: Painting[] = [
   {
@@ -63,6 +99,8 @@ export const paintings: Painting[] = [
     year: "1889",
     movement: "后印象派",
     region: "荷兰/法国",
+    country: "荷兰",
+    decade: 1880,
     imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ea/Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg/1280px-Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg",
     description: "梵高在法国圣雷米精神病院期间创作，以旋涡状的笔触描绘夜空中闪烁的星辰与明月，被认为是西方艺术史上最知名的画作之一。",
     difficulty: "easy",
@@ -85,6 +123,8 @@ export const paintings: Painting[] = [
     year: "1503-1519",
     movement: "文艺复兴盛期",
     region: "意大利/法国",
+    country: "意大利",
+    decade: 1500,
     imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg/800px-Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg",
     description: "以神秘的微笑和精湛的晕涂法闻名于世，是卢浮宫最珍贵的馆藏，描绘了佛罗伦萨商人之妻丽莎·盖拉尔迪尼的肖像。",
     difficulty: "easy",
@@ -106,6 +146,8 @@ export const paintings: Painting[] = [
     year: "1872",
     movement: "印象派",
     region: "法国",
+    country: "法国",
+    decade: 1870,
     imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/59/Monet_-_Impression%2C_Sunrise.jpg/1280px-Monet_-_Impression%2C_Sunrise.jpg",
     description: "这幅画在1874年首届印象派展览上亮相，其标题被评论家借用嘲讽整个画派，从而诞生了\"印象派\"这一名称。",
     difficulty: "normal",
@@ -127,6 +169,8 @@ export const paintings: Painting[] = [
     year: "1937",
     movement: "立体主义",
     region: "西班牙/法国",
+    country: "西班牙",
+    decade: 1930,
     imageUrl: "https://upload.wikimedia.org/wikipedia/en/thumb/7/74/PicassoGuernica.jpg/1280px-PicassoGuernica.jpg",
     description: "毕加索为1937年巴黎世博会西班牙馆创作，以立体主义手法描绘了西班牙内战中格尔尼卡小镇被轰炸后的惨状。",
     difficulty: "normal",
@@ -148,6 +192,8 @@ export const paintings: Painting[] = [
     year: "约1665",
     movement: "荷兰黄金时代",
     region: "荷兰",
+    country: "荷兰",
+    decade: 1660,
     imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/1665_Girl_with_a_Pearl_Earring.jpg/800px-1665_Girl_with_a_Pearl_Earring.jpg",
     description: "被誉为\"北方的蒙娜丽莎\"，以少女回眸的姿态和蓝色头巾与珍珠耳环的对比闻名，现藏于荷兰莫瑞泰斯皇家美术馆。",
     difficulty: "normal",
@@ -169,6 +215,8 @@ export const paintings: Painting[] = [
     year: "1931",
     movement: "超现实主义",
     region: "西班牙",
+    country: "西班牙",
+    decade: 1930,
     imageUrl: "https://upload.wikimedia.org/wikipedia/en/thumb/d/dd/The_Persistence_of_Memory.jpg/1024px-The_Persistence_of_Memory.jpg",
     description: "超现实主义代表作，画面中软塌塌的时钟成为标志性意象，象征着时间的主观性和梦境般的荒诞感。",
     difficulty: "normal",
@@ -190,6 +238,8 @@ export const paintings: Painting[] = [
     year: "1907-1908",
     movement: "新艺术运动 / 维也纳分离派",
     region: "奥地利",
+    country: "奥地利",
+    decade: 1900,
     imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/40/The_Kiss_-_Gustav_Klimt_-_Google_Cultural_Institute.jpg/1024px-The_Kiss_-_Gustav_Klimt_-_Google_Cultural_Institute.jpg",
     description: "克里姆特金色时期的巅峰之作，大量使用金箔装饰，描绘了相拥亲吻的恋人，是维也纳分离派最具代表性的作品。",
     difficulty: "hard",
@@ -211,6 +261,8 @@ export const paintings: Painting[] = [
     year: "约1512",
     movement: "文艺复兴盛期",
     region: "意大利",
+    country: "意大利",
+    decade: 1510,
     imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/Michelangelo_-_Creation_of_Adam_%28cropped%29.jpg/1280px-Michelangelo_-_Creation_of_Adam_%28cropped%29.jpg",
     description: "梵蒂冈西斯廷教堂天顶画的一部分，描绘了《圣经·创世纪》中上帝赋予亚当生命的瞬间，两指间的留白成为艺术史上的经典。",
     difficulty: "easy",
@@ -232,6 +284,8 @@ export const paintings: Painting[] = [
     year: "1893",
     movement: "表现主义",
     region: "挪威",
+    country: "挪威",
+    decade: 1890,
     imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Edvard_Munch%2C_1893%2C_The_Scream%2C_oil%2C_tempera_and_pastel_on_cardboard%2C_91_x_73_cm%2C_National_Gallery_of_Norway.jpg/800px-Edvard_Munch%2C_1893%2C_The_Scream%2C_oil%2C_tempera_and_pastel_on_cardboard%2C_91_x_73_cm%2C_National_Gallery_of_Norway.jpg",
     description: "表现主义的先驱之作，描绘了一个人在血红色天空下发出发自肺腑的尖叫，传达了深刻的焦虑与存在之苦。",
     difficulty: "normal",
@@ -253,6 +307,8 @@ export const paintings: Painting[] = [
     year: "1642",
     movement: "荷兰黄金时代",
     region: "荷兰",
+    country: "荷兰",
+    decade: 1640,
     imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/43/Rembrandt_van_Rijn_197.jpg/1280px-Rembrandt_van_Rijn_197.jpg",
     description: "伦勃朗最著名的群像画，描绘了阿姆斯特丹民兵队出发执行任务的场景，以戏剧性的光影处理和生动的人物动态著称。",
     difficulty: "hard",
@@ -274,6 +330,8 @@ export const paintings: Painting[] = [
     year: "1906",
     movement: "印象派",
     region: "法国",
+    country: "法国",
+    decade: 1900,
     imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/12/Claude_Monet_-_Water_Lilies_-_1906%2C_66.jpg/1280px-Claude_Monet_-_Water_Lilies_-_1906%2C_66.jpg",
     description: "莫奈在吉维尼花园的睡莲池边创作的系列作品之一，晚年近乎失明状态下仍坚持创作，成为印象派最具标志性的系列。",
     difficulty: "hard",
@@ -292,6 +350,8 @@ export const paintings: Painting[] = [
     year: "1888",
     movement: "后印象派",
     region: "荷兰/法国",
+    country: "荷兰",
+    decade: 1880,
     imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b4/Vincent_van_Gogh_-_Sunflowers_-_VGM_F458.jpg/800px-Vincent_van_Gogh_-_Sunflowers_-_VGM_F458.jpg",
     description: "梵高在阿尔勒时期为好友高更的房间创作，以浓烈的黄色调表达热情与生命力，是他最受人喜爱的系列作品。",
     difficulty: "easy",
@@ -305,3 +365,4 @@ export const paintings: Painting[] = [
 ];
 
 export const allArtists = Array.from(new Set(paintings.map(p => p.artist)));
+export const allMovements = Array.from(new Set(paintings.map(p => p.movement)));

@@ -60,28 +60,23 @@ export default function FeedbackPanel() {
     }
   }, [confidence]);
 
-  if (!isAnswered || !currentPainting) return null;
-
   const isCorrect = lastResultCorrect;
-  const rank = getDetectiveRank(totalScore);
-  const prevRank = getDetectiveRank(Math.max(0, totalScore - (lastScoreDelta ?? 0)));
-  const leveledUp = rank.level > prevRank.level;
 
-  const correctArtistInfo = artistInfos.find((a) => a.name === currentPainting.artist);
+  const correctArtistInfo = artistInfos.find((a) => a.name === currentPainting?.artist || "");
   const selectedArtistInfo = selectedAnswer
     ? artistInfos.find((a) => a.name === selectedAnswer)
     : null;
 
   const misleadingReasons = useMemo(() => {
-    if (isCorrect || !selectedArtistInfo || !correctArtistInfo) return [];
+    if (!isAnswered || !currentPainting || isCorrect || !selectedArtistInfo || !correctArtistInfo) return [];
     const reasons: string[] = [];
-    if (selectedArtistInfo.movement.split(/[\/、]/).some((m) =>
+    if (selectedArtistInfo.movement.split(/[/、]/).some((m) =>
       correctArtistInfo.movement.includes(m.trim()) ||
       currentPainting.movement.includes(m.trim())
     )) {
       reasons.push(`「${selectedArtistInfo.name}」同属相近艺术流派（${selectedArtistInfo.movement}），风格表现有相似之处`);
     }
-    if (selectedArtistInfo.region.split(/[\/、]/).some((r) =>
+    if (selectedArtistInfo.region.split(/[/、]/).some((r) =>
       correctArtistInfo.region.includes(r.trim())
     )) {
       reasons.push(`两位艺术家均活跃于 ${selectedArtistInfo.region} 地区，存在地域文化影响的重叠`);
@@ -100,7 +95,13 @@ export default function FeedbackPanel() {
       reasons.push(`建议重点关注笔触特征、色彩偏好和典型题材来区分两位艺术家`);
     }
     return reasons;
-  }, [isCorrect, selectedArtistInfo, correctArtistInfo, currentPainting]);
+  }, [isAnswered, isCorrect, selectedArtistInfo, correctArtistInfo, currentPainting]);
+
+  if (!isAnswered || !currentPainting) return null;
+
+  const rank = getDetectiveRank(totalScore);
+  const prevRank = getDetectiveRank(Math.max(0, totalScore - (lastScoreDelta ?? 0)));
+  const leveledUp = rank.level > prevRank.level;
 
   return (
     <div className="animate-fadeInUp space-y-4" style={{ animationDelay: "100ms" }}>

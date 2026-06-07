@@ -166,7 +166,7 @@ export default function InvestigationTimeline() {
             />
           </div>
           <div className="mt-1.5 flex flex-wrap gap-1">
-            {currentPainting.movement.split(/[\/、]/).map((m, i) => (
+            {currentPainting.movement.split(/[/、]/).map((m, i) => (
               <span
                 key={i}
                 className="px-2 py-0.5 text-[10px] font-serif text-gold bg-gold/10 border border-gold/30 rounded-sm shadow-inner-ink"

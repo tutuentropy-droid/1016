@@ -1,5 +1,5 @@
 import { useCallback, useEffect } from "react";
-import { Search, Volume2, VolumeX } from "lucide-react";
+import { Search, Volume2, VolumeX, BookOpen, Network, Gamepad2 } from "lucide-react";
 import ScoreBoard from "@/components/ScoreBoard";
 import PaintingCard from "@/components/PaintingCard";
 import OptionButton from "@/components/OptionButton";
@@ -11,11 +11,20 @@ import AmbientEffects from "@/components/AmbientEffects";
 import HomeWallBackground from "@/components/HomeWallBackground";
 import CinematicOpening from "@/components/CinematicOpening";
 import CaseBriefing from "@/components/CaseBriefing";
-import { useGameStore } from "@/store/useGameStore";
+import CollectionPanel from "@/components/CollectionPanel";
+import ArtRelationshipGraph from "@/components/ArtRelationshipGraph";
+import DailyTheme from "@/components/DailyTheme";
+import { useGameStore, type AppPage } from "@/store/useGameStore";
 import { audioManager } from "@/utils/audioManager";
 import { useState } from "react";
 
-export default function GamePage() {
+const NAV_ITEMS: { id: AppPage; label: string; en: string; icon: typeof Gamepad2 }[] = [
+  { id: "game", label: "调查案件", en: "Investigation", icon: Gamepad2 },
+  { id: "collection", label: "我的画廊", en: "Collection", icon: BookOpen },
+  { id: "graph", label: "关系图谱", en: "Network", icon: Network },
+];
+
+function GameContent() {
   const {
     nextQuestion,
     options,
@@ -23,6 +32,7 @@ export default function GamePage() {
     currentPainting,
     casePhase,
     setCasePhase,
+    generateDailyTheme,
   } = useGameStore();
   const [soundEnabled, setSoundEnabled] = useState(true);
 
@@ -42,7 +52,8 @@ export default function GamePage() {
 
   useEffect(() => {
     nextQuestion();
-  }, [nextQuestion]);
+    generateDailyTheme();
+  }, [nextQuestion, generateDailyTheme]);
 
   return (
     <div className="min-h-screen py-6 md:py-8 px-3 md:px-4 bg-paper-texture relative">
@@ -154,6 +165,7 @@ export default function GamePage() {
           <div
             className="lg:sticky lg:top-6 space-y-5 self-start"
           >
+            <DailyTheme />
             <InvestigationTimeline />
             <CluePanel />
 
@@ -166,6 +178,7 @@ export default function GamePage() {
               <p>· 每解锁一条线索扣除 <span className="text-terracotta font-semibold">20 分</span></p>
               <p>· 选择 <span className="text-terracotta font-semibold">高信心</span> 答对 ×1.5，答错扣分翻倍</p>
               <p>· 连续答对 <span className="text-orange-600 font-semibold">3 题以上</span> 可获得分数加成</p>
+              <p>· 完成 <span className="text-gold font-semibold">今日主题</span> 相关作品可获额外加成</p>
               <div className="pt-2 mt-2 border-t border-ink/10 flex items-center gap-2 text-[10px] text-ink/40">
                 <span className="inline-block w-1.5 h-1.5 rounded-full bg-gold animate-markerPulse" />
                 <span className="typewriter-font uppercase tracking-widest">Case in Progress</span>
@@ -181,6 +194,49 @@ export default function GamePage() {
           </p>
         </footer>
       </div>
+    </div>
+  );
+}
+
+export default function GamePage() {
+  const { activePage, setActivePage } = useGameStore();
+
+  return (
+    <div>
+      <nav className="sticky top-0 z-40 bg-paper-texture/95 backdrop-blur-md border-b border-ink/10">
+        <div className="max-w-6xl mx-auto px-3 md:px-4">
+          <div className="flex items-center justify-center py-3 gap-2">
+            {NAV_ITEMS.map((item) => {
+              const Icon = item.icon;
+              const isActive = activePage === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => setActivePage(item.id)}
+                  className={`relative flex items-center gap-2 px-4 md:px-5 py-2 rounded-sm transition-all ${
+                    isActive
+                      ? "bg-gold text-white shadow-md"
+                      : "text-ink/60 hover:text-ink hover:bg-ink/5"
+                  }`}
+                >
+                  <Icon size={16} strokeWidth={isActive ? 2.2 : 1.8} />
+                  <span className="font-display text-sm font-semibold hidden sm:inline">{item.label}</span>
+                  <span className="text-[9px] uppercase tracking-wider font-serif hidden md:inline opacity-70">
+                    {item.en}
+                  </span>
+                  {isActive && (
+                    <div className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-6 h-0.5 bg-white rounded-full" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </nav>
+
+      {activePage === "game" && <GameContent />}
+      {activePage === "collection" && <CollectionPanel />}
+      {activePage === "graph" && <ArtRelationshipGraph />}
     </div>
   );
 }
