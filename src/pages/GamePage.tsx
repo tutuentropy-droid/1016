@@ -59,6 +59,7 @@ export default function GamePage() {
       {casePhase === "briefing" && currentPainting && (
         <CaseBriefing
           painting={currentPainting}
+          options={options}
           onComplete={handleBriefingComplete}
         />
       )}

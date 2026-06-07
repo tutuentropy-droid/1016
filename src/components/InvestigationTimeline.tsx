@@ -16,7 +16,9 @@ export default function InvestigationTimeline() {
   const progress = useMemo(() => {
     if (!currentPainting) return 0;
     const total = currentPainting.clues.length;
-    return total === 0 ? 0 : (unlockedClueIndices.length / total) * 100;
+    const base = Math.min(2, total);
+    const effective = Math.min(base + unlockedClueIndices.length, total);
+    return total === 0 ? 0 : (effective / total) * 100;
   }, [currentPainting, unlockedClueIndices]);
 
   const accuracy = totalAnswered === 0 ? 0 : Math.round((correctCount / totalAnswered) * 100);
@@ -150,7 +152,7 @@ export default function InvestigationTimeline() {
               风格锁定
             </div>
             <span className="text-[10px] font-serif text-gold font-semibold">
-              {unlockedClueIndices.length} / {currentPainting.clues.length} 线索
+              {Math.min(2 + unlockedClueIndices.length, currentPainting.clues.length)} / {currentPainting.clues.length} 线索
             </span>
           </div>
           <div className="relative h-2.5 bg-ink/5 rounded-full overflow-hidden">
@@ -167,7 +169,7 @@ export default function InvestigationTimeline() {
             {currentPainting.movement.split(/[\/、]/).map((m, i) => (
               <span
                 key={i}
-                className="px-2 py-0.5 text-[10px] font-serif text-ink/70 bg-ink/5 border border-ink/10 rounded-sm"
+                className="px-2 py-0.5 text-[10px] font-serif text-gold bg-gold/10 border border-gold/30 rounded-sm shadow-inner-ink"
               >
                 {m.trim()}
               </span>

@@ -6,13 +6,16 @@ import { audioManager } from "@/utils/audioManager";
 
 interface CaseBriefingProps {
   painting: Painting;
+  options: string[];
   onComplete: () => void;
 }
 
-export default function CaseBriefing({ painting, onComplete }: CaseBriefingProps) {
+export default function CaseBriefing({ painting, options, onComplete }: CaseBriefingProps) {
   const [step, setStep] = useState(0);
 
-  const correctInfo = artistInfos.find((a) => a.name === painting.artist);
+  const suspectInfos = options
+    .map((name) => artistInfos.find((a) => a.name === name))
+    .filter((a): a is NonNullable<typeof a> => a !== undefined);
 
   useEffect(() => {
     audioManager.play("briefing_tick");
@@ -163,17 +166,20 @@ export default function CaseBriefing({ painting, onComplete }: CaseBriefingProps
                     Persons of Interest · 嫌疑人档案
                   </div>
                   <div className="flex flex-wrap gap-2 mt-1">
-                    {correctInfo && (
-                      <div className="px-3 py-1 bg-gold/10 border border-gold/30 rounded-sm">
-                        <span className="font-serif text-sm text-ink">{correctInfo.name}</span>
+                    {suspectInfos.map((info, idx) => (
+                      <div
+                        key={info.name}
+                        className="px-3 py-1 bg-ink/5 border border-ink/20 rounded-sm"
+                        style={{
+                          animation: `fadeInScale 0.5s ease-out ${0.1 + idx * 0.1}s both`,
+                        }}
+                      >
+                        <span className="font-serif text-sm text-ink">{info.name}</span>
                         <span className="ml-2 text-[10px] text-ink/40 font-serif">
-                          {correctInfo.era}
+                          {info.era}
                         </span>
                       </div>
-                    )}
-                    <div className="px-3 py-1 bg-ink/5 border border-ink/15 rounded-sm opacity-60">
-                      <span className="font-serif text-sm text-ink/60">⋯ 其他嫌疑人已加密</span>
-                    </div>
+                    ))}
                   </div>
                 </div>
               </div>
