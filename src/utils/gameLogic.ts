@@ -5,9 +5,11 @@ import {
   artistsWithPeriods,
   getPeriodsByArtist,
   getPaintingsByArtist,
+  getAllForgeryCases,
   type Painting,
   type Difficulty,
   type ArtistPeriod,
+  type ForgeryCase,
 } from "@/data/paintings";
 import type { Confidence } from "@/store/useGameStore";
 
@@ -176,4 +178,41 @@ export function calculateEvolutionScore(
   const delta = correctCount * baseScorePerPainting;
   const bonus = correctCount === totalCount ? 60 : 0;
   return { delta, bonus };
+}
+
+export function pickRandomForgeryCase(excludeIds: string[] = []): ForgeryCase | null {
+  const allCases = getAllForgeryCases();
+  const pool =
+    excludeIds.length >= allCases.length
+      ? allCases
+      : allCases.filter((c) => !excludeIds.includes(c.id));
+  if (pool.length === 0) return null;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+export function calculateForgeryScore(
+  unlockedClues: number,
+  totalClues: number,
+  isCorrect: boolean,
+  difficulty: "normal" | "hard" | "expert"
+): { delta: number; bonus: number } {
+  const baseScore = 120;
+  const clueDeduction = unlockedClues * 12;
+  let delta = Math.max(30, baseScore - clueDeduction);
+
+  const difficultyMultiplier = {
+    normal: 1.0,
+    hard: 1.3,
+    expert: 1.6,
+  };
+  delta = Math.round(delta * difficultyMultiplier[difficulty]);
+
+  if (!isCorrect) {
+    delta = -Math.round(delta * 0.4);
+  }
+
+  const noClueBonus = isCorrect && unlockedClues === 0 ? 50 : 0;
+  const perfectBonus = isCorrect && unlockedClues <= 2 ? 20 : 0;
+
+  return { delta, bonus: noClueBonus + perfectBonus };
 }

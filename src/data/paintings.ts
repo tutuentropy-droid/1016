@@ -1201,3 +1201,453 @@ export function getPaintingsByArtist(artistName: string): Painting[] {
 export function getPeriodById(periodId: string): ArtistPeriod | undefined {
   return artistPeriods.find((p) => p.id === periodId);
 }
+
+export type ForgeryVerdict = "authentic" | "copy" | "styleImitation";
+
+export type ForgeryClueType =
+  | "brushstrokeDetail"
+  | "signatureAnalysis"
+  | "pigmentDating"
+  | "compositionStyle"
+  | "uvExamination"
+  | "canvasTexture"
+  | "archiveComparison"
+  | "provenanceRecord";
+
+export interface ForgeryClue {
+  type: ForgeryClueType;
+  label: string;
+  labelEn: string;
+  cost: number;
+  content: string;
+  hintText: string;
+  visualEffect?: "uv" | "texture" | "comparison" | "signature" | "pigment";
+}
+
+export interface ForgeryReportSection {
+  title: string;
+  content: string;
+  isEvidence: boolean;
+}
+
+export interface ForgeryCase {
+  id: string;
+  caseTitle: string;
+  paintingId: string;
+  displayedArtist: string;
+  displayedYear: string;
+  groundTruth: ForgeryVerdict;
+  correctArtist: string;
+  correctYear: string;
+  caseBriefing: string;
+  difficulty: "normal" | "hard" | "expert";
+  clues: ForgeryClue[];
+  report: {
+    summary: string;
+    evidenceForVerdict: ForgeryReportSection[];
+    misleadingFeatures: { feature: string; explanation: string }[];
+    historicalContext: string;
+  };
+}
+
+export const forgeryCases: ForgeryCase[] = [
+  {
+    id: "forgery-1",
+    caseTitle: "失踪的向日葵",
+    paintingId: "12",
+    displayedArtist: "文森特·梵高",
+    displayedYear: "1888",
+    groundTruth: "copy",
+    correctArtist: "无名氏（临摹者）",
+    correctYear: "1950年代",
+    caseBriefing: "某拍卖行收到一幅声称是梵高《向日葵》系列的未公开作品，卖方称其为梵高在阿尔勒时期赠予友人的私藏。请仔细鉴定其真伪。",
+    difficulty: "normal",
+    clues: [
+      {
+        type: "brushstrokeDetail",
+        label: "笔触细节",
+        labelEn: "Brushstroke Detail",
+        cost: 15,
+        content: "笔触虽然模仿了梵高的厚涂技法，但笔触方向过于刻意整齐，缺乏梵高笔触中那种无意识的流动感和能量。颜料堆积的厚度均匀，缺少自然的随机变化。",
+        hintText: "放大观察笔触的方向与颜料厚度",
+        visualEffect: "texture",
+      },
+      {
+        type: "signatureAnalysis",
+        label: "签名分析",
+        labelEn: "Signature Analysis",
+        cost: 20,
+        content: "画布右下角的签名「Vincent」虽然模仿了梵高的笔迹，但字母 V 的起笔角度与真迹有微妙差异，墨水渗透方式显示签名是在颜料干透后很久才添加上去的。",
+        hintText: "检查签名的笔迹与年代",
+        visualEffect: "signature",
+      },
+      {
+        type: "pigmentDating",
+        label: "颜料年代检测",
+        labelEn: "Pigment Dating",
+        cost: 25,
+        content: "颜料样本分析显示，画中使用了钛白（Titanium White）颜料。这种颜料在1916年才获得专利并广泛使用，而梵高1890年就已去世，不可能使用这种颜料。",
+        hintText: "分析颜料的化学成分与年代",
+        visualEffect: "pigment",
+      },
+      {
+        type: "compositionStyle",
+        label: "构图风格",
+        labelEn: "Composition Style",
+        cost: 15,
+        content: "整体构图过于对称和规整，梵高的向日葵系列通常带有更强烈的不对称张力和动态感。花朵的排列方式更接近教科书式的临摹，而非梵高那种充满激情的即兴表达。",
+        hintText: "分析整体构图的布局与张力",
+      },
+      {
+        type: "uvExamination",
+        label: "紫外线观察",
+        labelEn: "UV Examination",
+        cost: 30,
+        content: "紫外线照射下，画面部分区域显示出异常的荧光反应。这些区域使用了现代合成树脂作为上光材料，而19世纪的画作应该使用天然树脂（如达玛树脂），后者在紫外线下不会产生这种荧光。",
+        hintText: "使用紫外线检查上光层与修复痕迹",
+        visualEffect: "uv",
+      },
+      {
+        type: "canvasTexture",
+        label: "画布纹理分析",
+        labelEn: "Canvas Texture",
+        cost: 20,
+        content: "画布的经纬线密度和编织方式与梵高在阿尔勒时期使用的画布不符。显微镜下可见画布纤维经过现代化学处理，这是20世纪中期以后才出现的处理工艺。",
+        hintText: "放大观察画布纤维与编织方式",
+        visualEffect: "texture",
+      },
+      {
+        type: "archiveComparison",
+        label: "档案对比",
+        labelEn: "Archive Comparison",
+        cost: 25,
+        content: "将此画与阿姆斯特丹梵高博物馆馆藏的五幅真迹《向日葵》进行数字对比，花瓣边缘的处理方式与梵高真迹存在系统性差异。梵高书信中也从未提及赠予友人一幅未公开的向日葵。",
+        hintText: "与博物馆档案中的真迹进行对比",
+        visualEffect: "comparison",
+      },
+      {
+        type: "provenanceRecord",
+        label: "来源记录调查",
+        labelEn: "Provenance Record",
+        cost: 20,
+        content: "卖方提供的来源记录链条存在断裂。据称1940年代由一位私人收藏家购得，但该时期的任何拍卖记录、展览目录或学术文献中均无此画的记载。",
+        hintText: "追溯作品的收藏和交易历史",
+      },
+    ],
+    report: {
+      summary: "综合检测结果，此画为一幅制作精良的临摹作品，创作时间约为1950年代。尽管临摹者在笔触和构图上极力模仿梵高，但现代颜料的使用和画布处理工艺彻底暴露了其伪作身份。",
+      evidenceForVerdict: [
+        { title: "颜料铁证", content: "钛白颜料1916年才获得专利，梵高1890年去世，不可能使用。这是判定为伪作的决定性证据。", isEvidence: true },
+        { title: "签名破绽", content: "签名在颜料干透很久后添加，笔迹细节与真迹不符。", isEvidence: true },
+        { title: "画布工艺", content: "画布纤维经过20世纪中期才出现的现代化学处理。", isEvidence: true },
+        { title: "紫外线异常", content: "使用了现代合成树脂上光，19世纪画作应使用天然树脂。", isEvidence: true },
+      ],
+      misleadingFeatures: [
+        { feature: "黄色调与厚涂笔触", explanation: "临摹者刻意模仿了梵高标志性的黄色调和厚涂技法，乍看之下极具欺骗性。但仔细观察会发现笔触过于刻意，缺乏真迹中无意识的流动感。" },
+        { feature: "向日葵主题", explanation: "选择梵高最著名的系列之一作为仿冒对象，利用了大众对该主题的熟悉感和情感认同，降低了人们的警惕性。" },
+      ],
+      historicalContext: "梵高的《向日葵》系列是艺术史上最知名的作品之一，也是被仿冒最多的作品。已知的梵高伪作超过1000幅，二战后至1960年代是梵高伪作的高峰期，当时许多赝品流入市场。",
+    },
+  },
+  {
+    id: "forgery-2",
+    caseTitle: "蒙娜丽莎的影子",
+    paintingId: "2",
+    displayedArtist: "列奥纳多·达·芬奇",
+    displayedYear: "1503-1519",
+    groundTruth: "styleImitation",
+    correctArtist: "16世纪追随者",
+    correctYear: "约1550年",
+    caseBriefing: "一座私人城堡中发现了一幅与《蒙娜丽莎》极为相似的画作，被认为可能是达芬奇工作室的另一版本。请鉴定这幅画的真实身份。",
+    difficulty: "hard",
+    clues: [
+      {
+        type: "brushstrokeDetail",
+        label: "笔触细节",
+        labelEn: "Brushstroke Detail",
+        cost: 20,
+        content: "虽然运用了晕涂法（Sfumato），但过渡层的细腻程度与达芬奇真迹存在差距。达芬奇的晕涂需要多达30层薄涂，而此画约15层就能达到类似的视觉效果，层厚明显更大。",
+        hintText: "观察晕涂法的细腻程度",
+        visualEffect: "texture",
+      },
+      {
+        type: "signatureAnalysis",
+        label: "签名与标记",
+        labelEn: "Signature & Markings",
+        cost: 15,
+        content: "与达芬奇多数作品一样，此画没有显著签名。但在画面边缘发现了一个不属于达芬奇工作室惯用标记的神秘缩写，风格指向16世纪中期的北意大利画家。",
+        hintText: "检查画面边缘是否有隐藏标记",
+      },
+      {
+        type: "pigmentDating",
+        label: "颜料年代检测",
+        labelEn: "Pigment Dating",
+        cost: 25,
+        content: "颜料成分与16世纪上半叶基本吻合，没有发现达芬奇去世后才出现的颜料。这排除了现代伪作的可能性，但无法区分是真迹还是同时代追随者的作品。",
+        hintText: "分析颜料成分判断大致年代",
+        visualEffect: "pigment",
+      },
+      {
+        type: "compositionStyle",
+        label: "构图风格",
+        labelEn: "Composition Style",
+        cost: 20,
+        content: "整体构图几乎完全复制了卢浮宫版本，但背景中远山的处理方式更为程式化，缺少达芬奇那种空气透视的层次感。人物比例略有差异，肩部更宽。",
+        hintText: "对比背景山水与人物比例细节",
+      },
+      {
+        type: "uvExamination",
+        label: "紫外线观察",
+        labelEn: "UV Examination",
+        cost: 30,
+        content: "紫外线显示此画经过多次修复，但底层草图的轮廓线处理方式与达芬奇的素描风格不同。达芬奇的草图通常使用左手线条，此画底层草图为右手绘制。",
+        hintText: "紫外线透视底层草图",
+        visualEffect: "uv",
+      },
+      {
+        type: "canvasTexture",
+        label: "画布与底板分析",
+        labelEn: "Support Analysis",
+        cost: 20,
+        content: "此画使用杨木底板，这与达芬奇的习惯一致。但底板的厚度和拼接方式与卢浮宫版本存在差异，树木年轮测年显示木材采伐于1530年左右，此时达芬奇已去世11年。",
+        hintText: "分析木质底板的年代与工艺",
+        visualEffect: "texture",
+      },
+      {
+        type: "archiveComparison",
+        label: "档案与文献对比",
+        labelEn: "Archive Comparison",
+        cost: 25,
+        content: "与卢浮宫版本进行高清数字对比，发现此画的每一个细节都刻意模仿原作，但手指的微妙姿态和嘴唇曲线的处理带有模仿者的个人习惯。达芬奇真迹中左右手食指的间距更窄。",
+        hintText: "与卢浮宫真迹进行像素级对比",
+        visualEffect: "comparison",
+      },
+      {
+        type: "provenanceRecord",
+        label: "来源记录调查",
+        labelEn: "Provenance Record",
+        cost: 20,
+        content: "来源记录可追溯至17世纪的一位威尼斯贵族收藏，但16世纪的记录缺失。考虑到16世纪中期北意大利出现了大量达芬奇追随者，此画很可能是那一时期的工作室复制品。",
+        hintText: "追溯16世纪的收藏历史",
+      },
+    ],
+    report: {
+      summary: "此画并非达芬奇真迹，而是16世纪中期（约1550年）一位北意大利画家的风格模仿作品。尽管作画年代符合文艺复兴时期，且临摹技巧精湛，但底板的树木年轮测年和草图的右手绘制方式，以及背景山水的程式化处理，都指向这是一位达芬奇追随者的作品。",
+      evidenceForVerdict: [
+        { title: "底板年代", content: "树木年轮测年显示木材采伐于1530年左右，此时达芬奇已去世11年，不可能使用此底板创作。", isEvidence: true },
+        { title: "右手草图", content: "底层草图为右手绘制线条，而达芬奇是左撇子，所有素描均用左手完成。", isEvidence: true },
+        { title: "背景程式化", content: "远山处理缺少达芬奇空气透视的层次感，更接近16世纪中期风格主义画家的手法。", isEvidence: true },
+        { title: "晕涂层数不足", content: "仅约15层薄涂，达芬奇真迹的晕涂法通常需要30层以上才能达到那种极致的朦胧效果。", isEvidence: true },
+      ],
+      misleadingFeatures: [
+        { feature: "颜料年代吻合", explanation: "使用了16世纪上半叶的颜料，容易让鉴定者误认为是同时期真迹。但同时代的追随者同样会使用当时的材料。" },
+        { feature: "杨木底板", explanation: "临摹者正确使用了达芬奇偏好的杨木底板，增加了欺骗性。但底板的具体年代和拼接方式仍暴露了破绽。" },
+      ],
+      historicalContext: "文艺复兴时期，大师的追随者和学生常会复制老师的作品以学习技法。达芬奇的《蒙娜丽莎》在他生前就已声名远扬，16世纪出现了许多优秀的复制品。这些同期复制品本身也具有相当的艺术价值和市场价格，有时可达数百万美元，但远不及真迹。",
+    },
+  },
+  {
+    id: "forgery-3",
+    caseTitle: "星夜的秘密",
+    paintingId: "1",
+    displayedArtist: "文森特·梵高",
+    displayedYear: "1889",
+    groundTruth: "authentic",
+    correctArtist: "文森特·梵高",
+    correctYear: "1889",
+    caseBriefing: "一幅从私人收藏中浮出水面的画作，声称是梵高《星月夜》的同期姊妹作。卖方提供了看似完整的来源记录。请鉴定此画是否为梵高真迹。",
+    difficulty: "expert",
+    clues: [
+      {
+        type: "brushstrokeDetail",
+        label: "笔触细节",
+        labelEn: "Brushstroke Detail",
+        cost: 20,
+        content: "旋涡状的笔触充满动势与能量，笔触方向具有高度的一致性和节奏感，与圣雷米时期的典型特征完全吻合。颜料厚度分布自然，旋涡中心颜料堆积更厚，边缘逐渐变薄，这是梵高独有的运笔习惯。",
+        hintText: "仔细观察旋涡笔触的能量与方向",
+        visualEffect: "texture",
+      },
+      {
+        type: "signatureAnalysis",
+        label: "签名分析",
+        labelEn: "Signature Analysis",
+        cost: 20,
+        content: "此画没有画布正面签名，这与梵高在圣雷米时期的习惯一致——他在这一时期的作品多数不签名，而是在画作背面标注。背面确实有他标志性的手写编号和缩略标题，墨水分析也符合年代。",
+        hintText: "检查画布背面的标记",
+        visualEffect: "signature",
+      },
+      {
+        type: "pigmentDating",
+        label: "颜料年代检测",
+        labelEn: "Pigment Dating",
+        cost: 25,
+        content: "所有颜料均可追溯至1880年代末，包括梵高常用的普鲁士蓝、铬黄和翠绿。未发现任何1889年之后才出现的颜料。颜料的结合剂分析指向同时期的亚麻籽油配方。",
+        hintText: "检测颜料中是否有后世才发明的成分",
+        visualEffect: "pigment",
+      },
+      {
+        type: "compositionStyle",
+        label: "构图风格",
+        labelEn: "Composition Style",
+        cost: 20,
+        content: "柏树的螺旋升腾姿态、天空中星云的涡旋结构、村庄灯火的暖黄色点，都与圣雷米时期的视觉语言高度一致。画面左下角的村庄被刻意压暗以突出夜空，这是梵高常用的明暗对比策略。",
+        hintText: "分析柏树、星云、村庄等元素的布局",
+      },
+      {
+        type: "uvExamination",
+        label: "紫外线观察",
+        labelEn: "UV Examination",
+        cost: 30,
+        content: "紫外线照射下，仅发现少量19世纪天然树脂上光材料，荧光反应正常。画面几乎没有过度修复的痕迹，仅有边缘处几处非常自然的老化修补，与画作年代相符。",
+        hintText: "检查是否有现代上光或修复材料",
+        visualEffect: "uv",
+      },
+      {
+        type: "canvasTexture",
+        label: "画布纹理分析",
+        labelEn: "Canvas Texture",
+        cost: 20,
+        content: "画布为标准的15号法式肖像画布，经纬密度与梵高在圣雷米时期使用的完全一致。画布背面有巴黎画商 Tanguy 的印章，这是梵高购买画布的固定供应商。",
+        hintText: "检查画布规格与供应商标记",
+        visualEffect: "texture",
+      },
+      {
+        type: "archiveComparison",
+        label: "档案对比",
+        labelEn: "Archive Comparison",
+        cost: 25,
+        content: "梵高在1889年6月16日写给弟弟提奥的信中提到：「我正在画一幅新的星空习作，比上次的更奔放一些」，经学者比对，此画的尺寸和主题与信中描述完全吻合。画背面的编号也与提奥的收藏清单一致。",
+        hintText: "查阅梵高书信与提奥的收藏档案",
+        visualEffect: "comparison",
+      },
+      {
+        type: "provenanceRecord",
+        label: "来源记录调查",
+        labelEn: "Provenance Record",
+        cost: 20,
+        content: "来源链条完整：从提奥遗孀乔安娜·梵高·邦格，到阿姆斯特丹市立博物馆的短期借展，到1920年代被一位瑞士银行家私人收购，此后在家族中传承至今。每一次交易均有文件佐证。",
+        hintText: "验证从提奥至今的完整收藏链",
+      },
+    ],
+    report: {
+      summary: "经过全面检测与档案比对，确认此画为文森特·梵高1889年在圣雷米精神病院期间创作的真迹。画作的笔触特征、颜料成分、画布供应商标记、梵高书信中的提及以及完整的来源链条，构成了无可辩驳的证据链。",
+      evidenceForVerdict: [
+        { title: "书信铁证", content: "梵高1889年6月16日写给提奥的信中明确描述了一幅「新的星空习作」，尺寸和主题与此画完全吻合。", isEvidence: true },
+        { title: "来源链条完整", content: "从提奥遗孀到瑞士银行家家族的百年收藏传承，每一步都有文件佐证，这对于梵高作品来说是极为难得的完整来源记录。", isEvidence: true },
+        { title: "供应商印章", content: "画布背面有巴黎画商 Tanguy 的印章，这是梵高购买画布的固定供应商，圣雷米时期的其他真迹也有同样标记。", isEvidence: true },
+        { title: "笔触特征一致", content: "旋涡笔触的能量感、颜料厚度的自然分布、明暗对比策略，均与圣雷米时期的艺术语言高度一致。", isEvidence: true },
+      ],
+      misleadingFeatures: [
+        { feature: "与《星月夜》高度相似", explanation: "正因为这幅画与知名的《星月夜》太过相似，初看时容易让人怀疑是刻意仿冒。但梵高在同一时期确实会对同一主题进行多次变体创作。" },
+        { feature: "私人收藏长期未公开", explanation: "如此重要的梵高作品长期隐匿于私人收藏，容易引发质疑。但1920年代欧洲富人购买艺术品后秘不示人是常见现象。" },
+      ],
+      historicalContext: "梵高一生创作了约2100幅作品，其中约860幅油画。由于他生前默默无闻，许多作品在早期缺乏系统记录。即使在今天，仍偶尔有梵高真迹从私人收藏中被重新发现。2013年，一幅梵高1888年的风景画《蒙马儒的日落》在挪威被重新鉴定为真迹，此前一直被认为是伪作。",
+    },
+  },
+  {
+    id: "forgery-4",
+    caseTitle: "睡莲池的倒影",
+    paintingId: "11",
+    displayedArtist: "克劳德·莫奈",
+    displayedYear: "1906",
+    groundTruth: "copy",
+    correctArtist: "20世纪仿冒者",
+    correctYear: "约1980年代",
+    caseBriefing: "一幅据称是莫奈吉维尼花园睡莲系列的私人收藏作品出现在艺术市场上。卖家声称此画从未公开展出，是莫奈赠予园丁的礼物。请进行鉴定。",
+    difficulty: "normal",
+    clues: [
+      {
+        type: "brushstrokeDetail",
+        label: "笔触细节",
+        labelEn: "Brushstroke Detail",
+        cost: 15,
+        content: "笔触虽然松散，但缺少莫奈那种层次叠加的透明感。每一笔的色彩过于均匀饱和，而莫奈的笔触通常带有颜色的微妙混合和不透明与透明层的交替叠加。",
+        hintText: "观察笔触的层次感与色彩混合",
+        visualEffect: "texture",
+      },
+      {
+        type: "signatureAnalysis",
+        label: "签名分析",
+        labelEn: "Signature Analysis",
+        cost: 20,
+        content: "签名「Claude Monet」位于画面左下角，字体模仿得相当逼真。但高倍放大镜下可见签名边缘有轻微的模板印刷痕迹，表明签名可能是通过丝网印刷后手工润色的。",
+        hintText: "高倍放大检查签名边缘",
+        visualEffect: "signature",
+      },
+      {
+        type: "pigmentDating",
+        label: "颜料年代检测",
+        labelEn: "Pigment Dating",
+        cost: 25,
+        content: "检测出喹吖啶酮红（Quinacridone Red），这种有机颜料在1958年才由杜邦公司发明并商业化生产。莫奈1926年去世，不可能使用这种颜料。此外，绿色颜料中含有酞菁绿，同样是1930年代后才出现的。",
+        hintText: "查找是否含有20世纪中后期的颜料成分",
+        visualEffect: "pigment",
+      },
+      {
+        type: "compositionStyle",
+        label: "构图风格",
+        labelEn: "Composition Style",
+        cost: 15,
+        content: "睡莲的分布过于均匀对称，缺少莫奈成熟期作品中那种看似随意实则精心安排的自然感。水面倒影的处理过于清晰明确，莫奈会让倒影与真实景物更加模糊交融。",
+        hintText: "分析睡莲分布与倒影的清晰度",
+      },
+      {
+        type: "uvExamination",
+        label: "紫外线观察",
+        labelEn: "UV Examination",
+        cost: 30,
+        content: "紫外线显示大面积强烈的蓝白色荧光，这是现代丙烯酸上光剂的典型特征。19世纪末至20世纪初的画作应使用天然达玛树脂或玛蒂树脂，荧光反应微弱且呈淡黄色。",
+        hintText: "观察上光材料的荧光反应",
+        visualEffect: "uv",
+      },
+      {
+        type: "canvasTexture",
+        label: "画布纹理分析",
+        labelEn: "Canvas Texture",
+        cost: 20,
+        content: "画布使用了现代的机器编织工艺，经纬线的均匀度远超1900年代的手工编织画布。画布边缘可见工业切割的整齐痕迹，而那个时代的画布通常是手工裁切，边缘会略有毛边。",
+        hintText: "检查画布编织工艺与切割方式",
+        visualEffect: "texture",
+      },
+      {
+        type: "archiveComparison",
+        label: "档案对比",
+        labelEn: "Archive Comparison",
+        cost: 25,
+        content: "与马摩丹莫奈博物馆和橘园美术馆的睡莲真迹对比，此画中睡莲花瓣的画法与莫奈的典型笔触存在系统性差异。莫奈的睡莲花瓣通常用3-5笔快速完成，此画每片花瓣都经过了反复描绘。",
+        hintText: "对比真迹中花瓣的运笔方式",
+        visualEffect: "comparison",
+      },
+      {
+        type: "provenanceRecord",
+        label: "来源记录调查",
+        labelEn: "Provenance Record",
+        cost: 20,
+        content: "「赠予园丁」的说法无法得到任何文献支撑。莫奈的书信和吉维尼庄园的记录中从未提到过赠予园丁画作的事情。卖方提供的1950年代照片经过数字取证，发现是经过Photoshop修改的。",
+        hintText: "调查赠予园丁的故事是否有文献佐证",
+      },
+    ],
+    report: {
+      summary: "此画为1980年代的仿冒作品。尽管临摹者在构图和色彩上做了相当精细的模仿，但多种现代颜料的使用（喹吖啶酮红、酞菁绿）、现代丙烯酸上光剂、机器编织画布，以及被篡改的来源照片，构成了完整的伪作证据链。",
+      evidenceForVerdict: [
+        { title: "颜料铁证", content: "喹吖啶酮红（1958年发明）和酞菁绿（1930年代后出现）均在莫奈去世数十年后才问世，这是最致命的证据。", isEvidence: true },
+        { title: "现代上光剂", content: "紫外线显示使用了现代丙烯酸上光剂，与莫奈时代的天然树脂不符。", isEvidence: true },
+        { title: "工业画布", content: "机器编织的画布和工业切割边缘均为20世纪后期特征。", isEvidence: true },
+        { title: "签名伪造", content: "高倍放大发现签名有丝网印刷模板痕迹，非手写真迹。", isEvidence: true },
+      ],
+      misleadingFeatures: [
+        { feature: "色彩总体接近", explanation: "仿冒者正确捕捉了莫奈睡莲系列的整体色调（绿色、粉色、紫色交融），在远距离观看时具有相当的欺骗性。" },
+        { feature: "「赠予园丁」的浪漫故事", explanation: "伪作者编选了一个听起来合情合理的叙事，利用了人们对艺术家与普通人之间温情故事的心理偏好，降低了初查时的警惕。" },
+      ],
+      historicalContext: "莫奈的睡莲系列是艺术史上最受追捧的作品之一，真品价格通常超过5000万美元。1980-1990年代是印象派伪作的高峰期，当时大量赝品涌入日本和美国的新富藏家市场。著名的伪作画匠如约翰·梅亚特（John Myatt）就曾仿冒过莫奈作品，他的赝品一度被苏富比和佳士得当作真迹拍卖。",
+    },
+  },
+];
+
+export function getForgeryCaseById(id: string): ForgeryCase | undefined {
+  return forgeryCases.find((c) => c.id === id);
+}
+
+export function getAllForgeryCases(): ForgeryCase[] {
+  return [...forgeryCases];
+}

@@ -1,5 +1,5 @@
 import { useCallback, useEffect } from "react";
-import { Search, Volume2, VolumeX, BookOpen, Network, Gamepad2, TrendingUp, User } from "lucide-react";
+import { Search, Volume2, VolumeX, BookOpen, Network, Gamepad2, TrendingUp, User, Gavel } from "lucide-react";
 import ScoreBoard from "@/components/ScoreBoard";
 import PaintingCard from "@/components/PaintingCard";
 import OptionButton from "@/components/OptionButton";
@@ -15,6 +15,7 @@ import CollectionPanel from "@/components/CollectionPanel";
 import ArtRelationshipGraph from "@/components/ArtRelationshipGraph";
 import DailyTheme from "@/components/DailyTheme";
 import StyleEvolutionPanel from "@/components/StyleEvolutionPanel";
+import ForgeryPanel from "@/components/ForgeryPanel";
 import { useGameStore, type AppPage, type GameMode } from "@/store/useGameStore";
 import { audioManager } from "@/utils/audioManager";
 import { useState } from "react";
@@ -28,6 +29,7 @@ const NAV_ITEMS: { id: AppPage; label: string; en: string; icon: typeof Gamepad2
 const MODE_ITEMS: { id: GameMode; label: string; en: string; icon: typeof Gamepad2; desc: string }[] = [
   { id: "standard", label: "艺术家鉴定", en: "Artist Detection", icon: User, desc: "经典模式：根据画作特征锁定艺术家" },
   { id: "evolution", label: "风格进化追踪", en: "Style Evolution", icon: TrendingUp, desc: "进阶模式：理解同一艺术家不同阶段的风格演变" },
+  { id: "forgery", label: "真假伪作鉴定", en: "Forgery Investigation", icon: Gavel, desc: "专家模式：紫外线、颜料分析、档案比对，判断真迹或伪作" },
 ];
 
 function GameContent() {
@@ -43,6 +45,8 @@ function GameContent() {
     setGameMode,
     startEvolutionCase,
     evolutionArtist,
+    startForgeryCase,
+    forgeryCurrentCase,
   } = useGameStore();
   const [soundEnabled, setSoundEnabled] = useState(true);
 
@@ -69,13 +73,19 @@ function GameContent() {
     if (gameMode === "evolution" && !evolutionArtist) {
       startEvolutionCase();
     }
-  }, [gameMode, evolutionArtist, startEvolutionCase]);
+    if (gameMode === "forgery" && !forgeryCurrentCase) {
+      startForgeryCase();
+    }
+  }, [gameMode, evolutionArtist, forgeryCurrentCase, startEvolutionCase, startForgeryCase]);
 
   const handleModeSwitch = (mode: GameMode) => {
     audioManager.play("paper_flip");
     setGameMode(mode);
     if (mode === "evolution") {
       startEvolutionCase();
+    }
+    if (mode === "forgery") {
+      startForgeryCase();
     }
   };
 
@@ -245,9 +255,13 @@ function GameContent() {
             </div>
           </div>
         </div>
-        ) : (
+        ) : gameMode === "evolution" ? (
           <div className="max-w-4xl mx-auto">
             <StyleEvolutionPanel />
+          </div>
+        ) : (
+          <div className="max-w-5xl mx-auto">
+            <ForgeryPanel />
           </div>
         )}
 
@@ -256,7 +270,9 @@ function GameContent() {
           <p className="tracking-widest uppercase text-[10px] typewriter-font">
             {gameMode === "standard"
               ? `— Case File #${currentPainting?.id.padStart(5, "0") || "00000"} · Active —`
-              : `— Style Evolution · ${evolutionArtist || "Investigating"} —`}
+              : gameMode === "evolution"
+              ? `— Style Evolution · ${evolutionArtist || "Investigating"} —`
+              : `— Forgery Investigation · Case #${forgeryCurrentCase?.id.toUpperCase() || "000"} · Active —`}
           </p>
         </footer>
       </div>

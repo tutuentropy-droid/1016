@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { Painting, ArtistPeriod } from "@/data/paintings";
+import type { Painting, ArtistPeriod, ForgeryCase, ForgeryClueType, ForgeryVerdict } from "@/data/paintings";
 import {
   pickRandomPainting,
   generateOptionsByDifficulty,
@@ -8,12 +8,16 @@ import {
   getConfidenceMultiplier,
   generateEvolutionCase,
   calculateEvolutionScore,
+  pickRandomForgeryCase,
+  calculateForgeryScore,
 } from "@/utils/gameLogic";
 
 export type Confidence = "low" | "medium" | "high";
 export type CasePhase = "opening" | "briefing" | "investigating" | "answered";
 export type AppPage = "game" | "collection" | "graph";
-export type GameMode = "standard" | "evolution";
+export type GameMode = "standard" | "evolution" | "forgery";
+
+export type ForgeryPhase = "briefing" | "observing" | "investigating" | "verdict" | "report";
 
 export type EvolutionPhase =
   | "observing"
@@ -43,6 +47,20 @@ export type InvestigationClueType =
   | "styleChangeHint";
 
 interface GameState {
+  // Forgery Investigation Mode
+  forgeryCurrentCase: ForgeryCase | null;
+  forgeryPhase: ForgeryPhase;
+  forgeryUnlockedClues: ForgeryClueType[];
+  forgerySelectedVerdict: ForgeryVerdict | null;
+  forgeryCaseCorrect: boolean | null;
+  forgeryScoreDelta: number;
+  forgeryCasesCompleted: number;
+  forgeryRecentCaseIds: string[];
+  startForgeryCase: () => void;
+  setForgeryPhase: (phase: ForgeryPhase) => void;
+  unlockForgeryClue: (clueType: ForgeryClueType) => void;
+  submitForgeryVerdict: (verdict: ForgeryVerdict) => void;
+  nextForgeryCase: () => void;
   gameMode: GameMode;
   currentPainting: Painting | null;
   options: string[];
@@ -153,6 +171,14 @@ export const useGameStore = create<GameState>()(
       evolutionPhase: "observing",
       evolutionCurrentPaintingIndex: 0,
       evolutionUnlockedClues: {},
+      forgeryCurrentCase: null,
+      forgeryPhase: "briefing",
+      forgeryUnlockedClues: [],
+      forgerySelectedVerdict: null,
+      forgeryCaseCorrect: null,
+      forgeryScoreDelta: 0,
+      forgeryCasesCompleted: 0,
+      forgeryRecentCaseIds: [],
 
       setCasePhase: (phase: CasePhase) => set({ casePhase: phase }),
       setFocusedDetail: (index: number | null) => set({ focusedDetailIndex: index }),
@@ -398,6 +424,68 @@ export const useGameStore = create<GameState>()(
 
       nextEvolutionCase: () => {
         get().startEvolutionCase();
+      },
+
+      startForgeryCase: () => {
+        const { forgeryRecentCaseIds } = get();
+        const forgeryCase = pickRandomForgeryCase(forgeryRecentCaseIds);
+        if (!forgeryCase) return;
+        const newRecent = [...forgeryRecentCaseIds, forgeryCase.id].slice(-3);
+        set({
+          forgeryCurrentCase: forgeryCase,
+          forgeryPhase: "briefing",
+          forgeryUnlockedClues: [],
+          forgerySelectedVerdict: null,
+          forgeryCaseCorrect: null,
+          forgeryScoreDelta: 0,
+          forgeryRecentCaseIds: newRecent,
+        });
+      },
+
+      setForgeryPhase: (phase: ForgeryPhase) => {
+        set({ forgeryPhase: phase });
+      },
+
+      unlockForgeryClue: (clueType: ForgeryClueType) => {
+        const { forgeryUnlockedClues, forgeryPhase } = get();
+        if (forgeryPhase === "report") return;
+        if (forgeryUnlockedClues.includes(clueType)) return;
+        set({ forgeryUnlockedClues: [...forgeryUnlockedClues, clueType] });
+      },
+
+      submitForgeryVerdict: (verdict: ForgeryVerdict) => {
+        const { forgeryCurrentCase, forgeryUnlockedClues, totalScore, streak, bestStreak, unlockedPaintingIds } = get();
+        if (!forgeryCurrentCase) return;
+        const isCorrect = verdict === forgeryCurrentCase.groundTruth;
+        const { delta, bonus } = calculateForgeryScore(
+          forgeryUnlockedClues.length,
+          forgeryCurrentCase.clues.length,
+          isCorrect,
+          forgeryCurrentCase.difficulty
+        );
+        const scoreDelta = delta + bonus;
+
+        const newStreak = isCorrect ? streak + 1 : 0;
+        const newBestStreak = Math.max(bestStreak, newStreak);
+        const newUnlocked = !unlockedPaintingIds.includes(forgeryCurrentCase.paintingId)
+          ? [...unlockedPaintingIds, forgeryCurrentCase.paintingId]
+          : unlockedPaintingIds;
+
+        set({
+          forgerySelectedVerdict: verdict,
+          forgeryCaseCorrect: isCorrect,
+          forgeryScoreDelta: scoreDelta,
+          forgeryPhase: "report",
+          totalScore: Math.max(0, totalScore + scoreDelta),
+          streak: newStreak,
+          bestStreak: newBestStreak,
+          forgeryCasesCompleted: get().forgeryCasesCompleted + 1,
+          unlockedPaintingIds: newUnlocked,
+        });
+      },
+
+      nextForgeryCase: () => {
+        get().startForgeryCase();
       },
     }),
     {
