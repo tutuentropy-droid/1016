@@ -15,6 +15,12 @@ export type CasePhase = "opening" | "briefing" | "investigating" | "answered";
 export type AppPage = "game" | "collection" | "graph";
 export type GameMode = "standard" | "evolution";
 
+export type EvolutionPhase =
+  | "observing"
+  | "investigating"
+  | "selecting"
+  | "result";
+
 export interface DailyTheme {
   id: string;
   title: string;
@@ -29,6 +35,12 @@ export interface EvolutionAssignment {
   paintingId: string;
   selectedPeriodId: string | null;
 }
+
+export type InvestigationClueType =
+  | "creationLocation"
+  | "yearRangeHint"
+  | "lifeEvent"
+  | "styleChangeHint";
 
 interface GameState {
   gameMode: GameMode;
@@ -59,6 +71,9 @@ interface GameState {
   evolutionSubmitted: boolean;
   evolutionCorrectCount: number;
   evolutionScoreDelta: number;
+  evolutionPhase: EvolutionPhase;
+  evolutionCurrentPaintingIndex: number;
+  evolutionUnlockedClues: Record<string, InvestigationClueType[]>;
   setCasePhase: (phase: CasePhase) => void;
   setFocusedDetail: (index: number | null) => void;
   setActivePage: (page: AppPage) => void;
@@ -72,6 +87,11 @@ interface GameState {
   assignPaintingToPeriod: (paintingId: string, periodId: string | null) => void;
   submitEvolutionAnswer: () => void;
   nextEvolutionCase: () => void;
+  setEvolutionPhase: (phase: EvolutionPhase) => void;
+  setEvolutionCurrentPaintingIndex: (index: number) => void;
+  unlockInvestigationClue: (paintingId: string, clueType: InvestigationClueType) => void;
+  submitSinglePaintingAnswer: (paintingId: string, periodId: string) => void;
+  advanceToNextPainting: () => void;
 }
 
 const DAILY_THEMES = [
@@ -130,6 +150,9 @@ export const useGameStore = create<GameState>()(
       evolutionSubmitted: false,
       evolutionCorrectCount: 0,
       evolutionScoreDelta: 0,
+      evolutionPhase: "observing",
+      evolutionCurrentPaintingIndex: 0,
+      evolutionUnlockedClues: {},
 
       setCasePhase: (phase: CasePhase) => set({ casePhase: phase }),
       setFocusedDetail: (index: number | null) => set({ focusedDetailIndex: index }),
@@ -260,6 +283,10 @@ export const useGameStore = create<GameState>()(
           paintingId: p.id,
           selectedPeriodId: null,
         }));
+        const unlockedClues: Record<string, InvestigationClueType[]> = {};
+        casePaintings.forEach((p) => {
+          unlockedClues[p.id] = [];
+        });
         set({
           evolutionArtist: artistName,
           evolutionPeriods: periods,
@@ -268,6 +295,9 @@ export const useGameStore = create<GameState>()(
           evolutionSubmitted: false,
           evolutionCorrectCount: 0,
           evolutionScoreDelta: 0,
+          evolutionPhase: "observing",
+          evolutionCurrentPaintingIndex: 0,
+          evolutionUnlockedClues: unlockedClues,
         });
       },
 
@@ -278,6 +308,50 @@ export const useGameStore = create<GameState>()(
           a.paintingId === paintingId ? { ...a, selectedPeriodId: periodId } : a
         );
         set({ evolutionAssignments: newAssignments });
+      },
+
+      setEvolutionPhase: (phase: EvolutionPhase) => {
+        set({ evolutionPhase: phase });
+      },
+
+      setEvolutionCurrentPaintingIndex: (index: number) => {
+        set({ evolutionCurrentPaintingIndex: index });
+      },
+
+      unlockInvestigationClue: (paintingId: string, clueType: InvestigationClueType) => {
+        const { evolutionUnlockedClues } = get();
+        const current = evolutionUnlockedClues[paintingId] || [];
+        if (current.includes(clueType)) return;
+        set({
+          evolutionUnlockedClues: {
+            ...evolutionUnlockedClues,
+            [paintingId]: [...current, clueType],
+          },
+        });
+      },
+
+      submitSinglePaintingAnswer: (paintingId: string, periodId: string) => {
+        const { evolutionAssignments } = get();
+        const newAssignments = evolutionAssignments.map((a) =>
+          a.paintingId === paintingId ? { ...a, selectedPeriodId: periodId } : a
+        );
+        set({
+          evolutionAssignments: newAssignments,
+          evolutionPhase: "result",
+        });
+      },
+
+      advanceToNextPainting: () => {
+        const { evolutionCurrentPaintingIndex, evolutionPaintings } = get();
+        const next = evolutionCurrentPaintingIndex + 1;
+        if (next < evolutionPaintings.length) {
+          set({
+            evolutionCurrentPaintingIndex: next,
+            evolutionPhase: "observing",
+          });
+        } else {
+          get().submitEvolutionAnswer();
+        }
       },
 
       submitEvolutionAnswer: () => {
