@@ -1,6 +1,22 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { Painting, ArtistPeriod, ForgeryCase, ForgeryClueType, ForgeryVerdict } from "@/data/paintings";
+import type {
+  Painting,
+  ArtistPeriod,
+  ForgeryCase,
+  ForgeryClueType,
+  ForgeryVerdict,
+  ConfusionCampCombination,
+  ConfusionCampQuestion,
+  ConfusionCampAnswer,
+  StyleIdentificationReport,
+} from "@/data/paintings";
+import {
+  getAllCampCombinations,
+  generateCampQuestions,
+  generateWeaknessQuestions,
+  analyzeMisjudgments,
+} from "@/data/paintings";
 import {
   pickRandomPainting,
   generateOptionsByDifficulty,
@@ -15,7 +31,14 @@ import {
 export type Confidence = "low" | "medium" | "high";
 export type CasePhase = "opening" | "briefing" | "investigating" | "answered";
 export type AppPage = "game" | "collection" | "graph";
-export type GameMode = "standard" | "evolution" | "forgery";
+export type GameMode = "standard" | "evolution" | "forgery" | "confusionCamp";
+export type ConfusionCampPhase =
+  | "selection"
+  | "briefing"
+  | "playing"
+  | "feedback"
+  | "weakness"
+  | "report";
 
 export type ForgeryPhase = "briefing" | "observing" | "investigating" | "verdict" | "report";
 
@@ -61,6 +84,27 @@ interface GameState {
   unlockForgeryClue: (clueType: ForgeryClueType) => void;
   submitForgeryVerdict: (verdict: ForgeryVerdict) => void;
   nextForgeryCase: () => void;
+  // Style Confusion Camp Mode
+  campPhase: ConfusionCampPhase;
+  campCurrentCombination: ConfusionCampCombination | null;
+  campQuestions: ConfusionCampQuestion[];
+  campCurrentQuestionIndex: number;
+  campAnswers: ConfusionCampAnswer[];
+  campQuestionStartTime: number;
+  campSelectedAnswer: string | null;
+  campLastAnswerCorrect: boolean | null;
+  campReport: StyleIdentificationReport | null;
+  campWeaknessItemIds: string[];
+  campCampsCompleted: number;
+  campTotalScore: number;
+  selectCampCombination: (combinationId: string) => void;
+  startCamp: () => void;
+  submitCampAnswer: (answer: string) => void;
+  nextCampQuestion: () => void;
+  startWeaknessTraining: () => void;
+  finishCamp: () => void;
+  resetCamp: () => void;
+  setCampPhase: (phase: ConfusionCampPhase) => void;
   gameMode: GameMode;
   currentPainting: Painting | null;
   options: string[];
@@ -179,6 +223,18 @@ export const useGameStore = create<GameState>()(
       forgeryScoreDelta: 0,
       forgeryCasesCompleted: 0,
       forgeryRecentCaseIds: [],
+      campPhase: "selection",
+      campCurrentCombination: null,
+      campQuestions: [],
+      campCurrentQuestionIndex: 0,
+      campAnswers: [],
+      campQuestionStartTime: 0,
+      campSelectedAnswer: null,
+      campLastAnswerCorrect: null,
+      campReport: null,
+      campWeaknessItemIds: [],
+      campCampsCompleted: 0,
+      campTotalScore: 0,
 
       setCasePhase: (phase: CasePhase) => set({ casePhase: phase }),
       setFocusedDetail: (index: number | null) => set({ focusedDetailIndex: index }),
@@ -486,6 +542,181 @@ export const useGameStore = create<GameState>()(
 
       nextForgeryCase: () => {
         get().startForgeryCase();
+      },
+
+      setCampPhase: (phase: ConfusionCampPhase) => set({ campPhase: phase }),
+
+      selectCampCombination: (combinationId: string) => {
+        const combination = getAllCampCombinations().find(
+          (c) => c.id === combinationId
+        );
+        if (!combination) return;
+        const questions = generateCampQuestions(combination);
+        set({
+          campCurrentCombination: combination,
+          campQuestions: questions,
+          campPhase: "briefing",
+          campCurrentQuestionIndex: 0,
+          campAnswers: [],
+          campSelectedAnswer: null,
+          campLastAnswerCorrect: null,
+          campReport: null,
+          campWeaknessItemIds: [],
+        });
+      },
+
+      startCamp: () => {
+        const { campQuestions } = get();
+        if (campQuestions.length === 0) return;
+        set({
+          campPhase: "playing",
+          campQuestionStartTime: Date.now(),
+          campSelectedAnswer: null,
+          campLastAnswerCorrect: null,
+        });
+      },
+
+      submitCampAnswer: (answer: string) => {
+        const {
+          campQuestions,
+          campCurrentQuestionIndex,
+          campCurrentCombination,
+          campQuestionStartTime,
+          campAnswers,
+          campTotalScore,
+          totalScore,
+          unlockedPaintingIds,
+        } = get();
+        if (!campCurrentCombination) return;
+        const question = campQuestions[campCurrentQuestionIndex];
+        if (!question) return;
+
+        const timeSpent = Date.now() - campQuestionStartTime;
+        const isCorrect = answer === question.correctAnswer;
+
+        const selectedItem = campCurrentCombination.items.find(
+          (i) => i.label === answer
+        );
+
+        const scorePerQuestion = 60;
+        const timeBonus = timeSpent < 5000 ? 20 : timeSpent < 10000 ? 10 : 0;
+        const delta = isCorrect ? scorePerQuestion + timeBonus : -Math.round(scorePerQuestion * 0.3);
+
+        const newAnswer: ConfusionCampAnswer = {
+          questionId: question.id,
+          paintingId: question.paintingId,
+          selectedAnswer: answer,
+          correctAnswer: question.correctAnswer,
+          isCorrect,
+          correctItemId: question.correctItemId,
+          selectedItemId: selectedItem?.id || null,
+          timeSpent,
+          answeredAt: Date.now(),
+        };
+
+        const newAnswers = [...campAnswers, newAnswer];
+        const allQuestionsAnswered =
+          campCurrentQuestionIndex >= campQuestions.length - 1;
+
+        const newUnlocked =
+          isCorrect && !unlockedPaintingIds.includes(question.paintingId)
+            ? [...unlockedPaintingIds, question.paintingId]
+            : unlockedPaintingIds;
+
+        if (allQuestionsAnswered) {
+          const report = analyzeMisjudgments(newAnswers, campCurrentCombination);
+          const errorAnswers = newAnswers.filter((a) => !a.isCorrect);
+          const weakItemIds = Array.from(
+            new Set(errorAnswers.map((a) => a.correctItemId))
+          );
+          set({
+            campAnswers: newAnswers,
+            campSelectedAnswer: answer,
+            campLastAnswerCorrect: isCorrect,
+            campPhase: "feedback",
+            campReport: report,
+            campWeaknessItemIds: weakItemIds,
+            campTotalScore: campTotalScore + delta,
+            totalScore: Math.max(0, totalScore + delta),
+            unlockedPaintingIds: newUnlocked,
+            streak: isCorrect ? get().streak + 1 : 0,
+            bestStreak: isCorrect ? Math.max(get().bestStreak, get().streak + 1) : get().bestStreak,
+          });
+        } else {
+          set({
+            campAnswers: newAnswers,
+            campSelectedAnswer: answer,
+            campLastAnswerCorrect: isCorrect,
+            campPhase: "feedback",
+            campTotalScore: campTotalScore + delta,
+            totalScore: Math.max(0, totalScore + delta),
+            unlockedPaintingIds: newUnlocked,
+            streak: isCorrect ? get().streak + 1 : 0,
+            bestStreak: isCorrect ? Math.max(get().bestStreak, get().streak + 1) : get().bestStreak,
+          });
+        }
+      },
+
+      nextCampQuestion: () => {
+        const { campQuestions, campCurrentQuestionIndex } = get();
+        const nextIndex = campCurrentQuestionIndex + 1;
+        if (nextIndex < campQuestions.length) {
+          set({
+            campCurrentQuestionIndex: nextIndex,
+            campPhase: "playing",
+            campQuestionStartTime: Date.now(),
+            campSelectedAnswer: null,
+            campLastAnswerCorrect: null,
+          });
+        }
+      },
+
+      startWeaknessTraining: () => {
+        const { campCurrentCombination, campWeaknessItemIds } = get();
+        if (!campCurrentCombination) return;
+        const weakQuestions = generateWeaknessQuestions(
+          campCurrentCombination,
+          campWeaknessItemIds
+        );
+        if (weakQuestions.length === 0) {
+          set({ campPhase: "report" });
+          return;
+        }
+        set({
+          campQuestions: weakQuestions,
+          campCurrentQuestionIndex: 0,
+          campAnswers: [],
+          campPhase: "weakness",
+          campSelectedAnswer: null,
+          campLastAnswerCorrect: null,
+          campQuestionStartTime: Date.now(),
+        });
+      },
+
+      finishCamp: () => {
+        const { campAnswers, campCurrentCombination } = get();
+        if (!campCurrentCombination) return;
+        const report = analyzeMisjudgments(campAnswers, campCurrentCombination);
+        set({
+          campReport: report,
+          campPhase: "report",
+          campCampsCompleted: get().campCampsCompleted + 1,
+        });
+      },
+
+      resetCamp: () => {
+        set({
+          campPhase: "selection",
+          campCurrentCombination: null,
+          campQuestions: [],
+          campCurrentQuestionIndex: 0,
+          campAnswers: [],
+          campQuestionStartTime: 0,
+          campSelectedAnswer: null,
+          campLastAnswerCorrect: null,
+          campReport: null,
+          campWeaknessItemIds: [],
+        });
       },
     }),
     {

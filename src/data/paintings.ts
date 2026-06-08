@@ -1651,3 +1651,621 @@ export function getForgeryCaseById(id: string): ForgeryCase | undefined {
 export function getAllForgeryCases(): ForgeryCase[] {
   return [...forgeryCases];
 }
+
+export type ConfusionDimension = "color" | "brushstroke" | "light" | "composition" | "theme" | "emotion";
+
+export interface ConfusionDimensionDiff {
+  dimension: ConfusionDimension;
+  dimensionLabel: string;
+  description: string;
+}
+
+export interface ConfusionCampItem {
+  id: string;
+  label: string;
+  labelEn: string;
+  type: "artist" | "period" | "movement";
+  description: string;
+  keyFeatures: string[];
+}
+
+export interface ConfusionCampCombination {
+  id: string;
+  title: string;
+  titleEn: string;
+  subtitle: string;
+  difficulty: "normal" | "hard" | "expert";
+  items: ConfusionCampItem[];
+  keyDifferences: ConfusionDimensionDiff[];
+  paintingIds: string[];
+  background: string;
+}
+
+export type ConfusionCampQuestionType = "artist" | "period" | "movement";
+
+export interface ConfusionCampQuestion {
+  id: string;
+  paintingId: string;
+  questionType: ConfusionCampQuestionType;
+  questionText: string;
+  options: string[];
+  correctAnswer: string;
+  correctItemId: string;
+  confusionExplanation: string;
+  keyDimensions: ConfusionDimension[];
+}
+
+export interface ConfusionCampAnswer {
+  questionId: string;
+  paintingId: string;
+  selectedAnswer: string;
+  correctAnswer: string;
+  isCorrect: boolean;
+  correctItemId: string;
+  selectedItemId: string | null;
+  timeSpent: number;
+  answeredAt: number;
+}
+
+export interface MisjudgmentPattern {
+  confusedPair: [string, string];
+  count: number;
+  dimensions: ConfusionDimension[];
+  description: string;
+  tip: string;
+}
+
+export interface StyleIdentificationReport {
+  totalQuestions: number;
+  correctCount: number;
+  accuracy: number;
+  averageTimePerQuestion: number;
+  misjudgmentPatterns: MisjudgmentPattern[];
+  weakDimensions: { dimension: ConfusionDimension; label: string; errorRate: number }[];
+  strongDimensions: { dimension: ConfusionDimension; label: string; accuracy: number }[];
+  progressMessage: string;
+  improvementTips: string[];
+}
+
+export const DIMENSION_LABELS: Record<ConfusionDimension, string> = {
+  color: "色彩",
+  brushstroke: "笔触",
+  light: "光影",
+  composition: "构图",
+  theme: "主题",
+  emotion: "情感表达",
+};
+
+export const confusionCampCombinations: ConfusionCampCombination[] = [
+  {
+    id: "vangogh-munch",
+    title: "梵高 vs 蒙克：旋涡中的呐喊",
+    titleEn: "Van Gogh vs Munch",
+    subtitle: "后印象派与表现主义先驱的情感旋涡",
+    difficulty: "hard",
+    items: [
+      {
+        id: "vangogh",
+        label: "文森特·梵高",
+        labelEn: "Vincent van Gogh",
+        type: "artist",
+        description: "荷兰后印象派大师，以强烈的色彩和旋涡状笔触表达对生命的炽热热爱。",
+        keyFeatures: [
+          "黄蓝互补色的强烈对比",
+          "流动的旋涡状厚涂笔触",
+          "情感外放、充满生命力",
+          "南方阳光般的明亮色调",
+        ],
+      },
+      {
+        id: "munch",
+        label: "爱德华·蒙克",
+        labelEn: "Edvard Munch",
+        type: "artist",
+        description: "挪威表现主义先驱，以扭曲的线条和深沉的色调传达存在的焦虑。",
+        keyFeatures: [
+          "深暗的蓝绿与血红配色",
+          "波浪状扭曲线条，更尖锐焦虑",
+          "情感内省、充满存在焦虑",
+          "北欧寒冷的阴郁氛围",
+        ],
+      },
+    ],
+    keyDifferences: [
+      {
+        dimension: "color",
+        dimensionLabel: "色彩",
+        description: "梵高：黄蓝强烈互补，明亮炽热；蒙克：蓝绿与血红，深沉阴郁。",
+      },
+      {
+        dimension: "brushstroke",
+        dimensionLabel: "笔触",
+        description: "梵高：厚涂旋涡，流动有序，充满能量；蒙克：细线扭曲，尖锐抖动，更焦虑。",
+      },
+      {
+        dimension: "emotion",
+        dimensionLabel: "情感",
+        description: "梵高：对生命的热爱与狂喜；蒙克：对死亡与存在的焦虑与恐惧。",
+      },
+      {
+        dimension: "theme",
+        dimensionLabel: "主题",
+        description: "梵高：向日葵、麦田、星空（生命与自然）；蒙克：呐喊、病孩、死亡（人类痛苦）。",
+      },
+    ],
+    paintingIds: ["1", "9", "12", "13", "14"],
+    background: "梵高与蒙克都是19世纪末表达性绘画的先驱，两人都以扭曲的形式和强烈的色彩表达内心情感。梵高的旋涡充满生命能量，蒙克的扭曲则传达存在焦虑。他们共同影响了20世纪表现主义的发展。",
+  },
+  {
+    id: "monet-renoir",
+    title: "莫奈 vs 雷诺阿：光影双生子",
+    titleEn: "Monet vs Renoir",
+    subtitle: "印象派奠基人的微妙差异",
+    difficulty: "normal",
+    items: [
+      {
+        id: "monet",
+        label: "克劳德·莫奈",
+        labelEn: "Claude Monet",
+        type: "artist",
+        description: "印象派之父，专注于捕捉瞬间光影变化，对自然风景情有独钟。",
+        keyFeatures: [
+          "细碎灵动的笔触，更碎片化",
+          "注重光线本身的变化",
+          "以自然风景为主",
+          "色彩偏冷（蓝绿紫）",
+        ],
+      },
+      {
+        id: "renoir",
+        label: "皮埃尔·雷诺阿",
+        labelEn: "Pierre-Auguste Renoir",
+        type: "artist",
+        description: "印象派核心人物，以描绘人物和欢乐的社交场景著称，笔触更柔和。",
+        keyFeatures: [
+          "羽毛般柔和的笔触，更融合",
+          "注重人物肌肤的光影",
+          "以人物、舞会、休闲为主",
+          "色彩偏暖（粉红橘）",
+        ],
+      },
+    ],
+    keyDifferences: [
+      {
+        dimension: "brushstroke",
+        dimensionLabel: "笔触",
+        description: "莫奈：细碎灵动，更碎片化，像无数小色块拼贴；雷诺阿：羽毛般柔和，更融合，有奶油般的质感。",
+      },
+      {
+        dimension: "theme",
+        dimensionLabel: "主题",
+        description: "莫奈：睡莲、干草堆、教堂（纯风景）；雷诺阿：煎饼磨坊的舞会、游艇上的午餐（人物休闲）。",
+      },
+      {
+        dimension: "color",
+        dimensionLabel: "色彩",
+        description: "莫奈：蓝绿紫冷色调为主；雷诺阿：粉红橘暖色调为主，擅长描绘肤色。",
+      },
+      {
+        dimension: "light",
+        dimensionLabel: "光影",
+        description: "莫奈：光线本身是主角，追踪不同时刻的光；雷诺阿：光影服务于人物，光斑洒在皮肤上。",
+      },
+    ],
+    paintingIds: ["3", "11", "19", "20"],
+    background: "莫奈与雷诺阿是印象派最亲密的伙伴，曾一起在户外写生多年。两人都打破了传统绘画的明暗法则，但莫奈更关注自然光线的瞬间变化，雷诺阿则更钟情于人物和欢乐的生活场景。",
+  },
+  {
+    id: "davinci-michelangelo",
+    title: "达芬奇 vs 米开朗基罗：文艺复兴的巨人对决",
+    titleEn: "Da Vinci vs Michelangelo",
+    subtitle: "佛罗伦萨两位天才的迥异风格",
+    difficulty: "hard",
+    items: [
+      {
+        id: "davinci",
+        label: "列奥纳多·达·芬奇",
+        labelEn: "Leonardo da Vinci",
+        type: "artist",
+        description: "文艺复兴全才，以晕涂法和神秘氛围著称，画面柔和朦胧。",
+        keyFeatures: [
+          "晕涂法（Sfumato），朦胧过渡",
+          "画面柔和，轮廓模糊",
+          "神秘内敛，如蒙娜丽莎的微笑",
+          "科学与艺术的完美结合",
+        ],
+      },
+      {
+        id: "michelangelo",
+        label: "米开朗基罗",
+        labelEn: "Michelangelo",
+        type: "artist",
+        description: "雕塑家出身的画家，以雕塑般的人体和力量感著称，画面充满张力。",
+        keyFeatures: [
+          "雕塑般清晰的轮廓线",
+          "肌肉线条夸张有力",
+          "宏大雄伟，充满戏剧张力",
+          "以人体为主要表现载体",
+        ],
+      },
+    ],
+    keyDifferences: [
+      {
+        dimension: "brushstroke",
+        dimensionLabel: "笔触/技法",
+        description: "达芬奇：晕涂法（Sfumato），30层薄涂，轮廓消失在朦胧中；米开朗基罗：清晰的轮廓线，如同雕塑的凿刻痕迹。",
+      },
+      {
+        dimension: "composition",
+        dimensionLabel: "构图",
+        description: "达芬奇：金字塔构图，稳定和谐；米开朗基罗：旋转扭曲的S形构图，充满动势。",
+      },
+      {
+        dimension: "theme",
+        dimensionLabel: "主题",
+        description: "达芬奇：肖像、宗教场景，注重人物心理；米开朗基罗：西斯廷天顶画、大卫雕塑，人体是唯一主题。",
+      },
+      {
+        dimension: "light",
+        dimensionLabel: "光影",
+        description: "达芬奇：柔和的漫射光，没有强烈明暗对比；米开朗基罗：雕塑式强光，塑造肌肉体积感。",
+      },
+    ],
+    paintingIds: ["2", "8"],
+    background: "达芬奇与米开朗基罗是文艺复兴盛期最伟大的两位艺术家，也是佛罗伦萨的竞争对手。达芬奇年长23岁，是博学的全才；米开朗基罗更认为自己是雕塑家，以超人的意志力塑造宏伟的人体。两人的风格截然不同，共同定义了文艺复兴的高度。",
+  },
+  {
+    id: "rembrandt-vermeer",
+    title: "伦勃朗 vs 维米尔：荷兰黄金时代双璧",
+    titleEn: "Rembrandt vs Vermeer",
+    subtitle: "阿姆斯特丹与代尔夫特的光影对话",
+    difficulty: "expert",
+    items: [
+      {
+        id: "rembrandt",
+        label: "伦勃朗",
+        labelEn: "Rembrandt",
+        type: "artist",
+        description: "荷兰黄金时代最伟大的画家，以戏剧性的明暗对比和深刻的人物心理著称。",
+        keyFeatures: [
+          "伦勃朗光：聚光式强烈明暗对比",
+          "画面厚重，颜料堆积有质感",
+          "群像宏大，人物众多",
+          "深刻的人性刻画，沧桑感",
+        ],
+      },
+      {
+        id: "vermeer",
+        label: "约翰内斯·维米尔",
+        labelEn: "Johannes Vermeer",
+        type: "artist",
+        description: "代尔夫特的画家，以静谧的室内场景和柔和的窗外光线著称，作品数量极少。",
+        keyFeatures: [
+          "柔和的漫射窗外光，均匀分布",
+          "画面如瓷器般细腻光滑",
+          "单个人物，室内静谧场景",
+          "超然而平静，时间仿佛静止",
+        ],
+      },
+    ],
+    keyDifferences: [
+      {
+        dimension: "light",
+        dimensionLabel: "光影",
+        description: "伦勃朗：聚光式强烈明暗对比（ chiaroscuro ），大部分区域在暗部；维米尔：柔和的漫射窗外光，均匀照亮整个场景。",
+      },
+      {
+        dimension: "brushstroke",
+        dimensionLabel: "笔触",
+        description: "伦勃朗：厚重粗犷，颜料堆积有实体感；维米尔：细腻光滑，如瓷器表面，几乎看不到笔触。",
+      },
+      {
+        dimension: "composition",
+        dimensionLabel: "构图",
+        description: "伦勃朗：复杂的群像构图，人物众多层次丰富；维米尔：简洁的室内构图，1-2个人物，空间感强。",
+      },
+      {
+        dimension: "emotion",
+        dimensionLabel: "情感",
+        description: "伦勃朗：深刻的人性、沧桑、悲剧感；维米尔：超然、静谧、日常诗意，时间仿佛静止。",
+      },
+    ],
+    paintingIds: ["5", "10"],
+    background: "伦勃朗和维米尔是荷兰黄金时代最伟大的两位画家，但风格迥异。伦勃朗在阿姆斯特丹名利双收后破产，一生创作了600多幅油画；维米尔在代尔夫特默默无名，仅存世36幅作品，生前穷困潦倒，死后两百年才被重新发现。",
+  },
+  {
+    id: "picasso-dali",
+    title: "毕加索 vs 达利：20世纪西班牙狂想",
+    titleEn: "Picasso vs Dalí",
+    subtitle: "立体主义解构与超现实梦境",
+    difficulty: "expert",
+    items: [
+      {
+        id: "picasso",
+        label: "巴勃罗·毕加索",
+        labelEn: "Pablo Picasso",
+        type: "artist",
+        description: "立体主义创始人，以多视角解构和形式革命著称，一生风格多变。",
+        keyFeatures: [
+          "几何块面，多视角同时呈现",
+          "棕灰中性色为主（分析立体主义）",
+          "智性解构，理性探索形式",
+          "破碎重组的形象",
+        ],
+      },
+      {
+        id: "dali",
+        label: "萨尔瓦多·达利",
+        labelEn: "Salvador Dalí",
+        type: "artist",
+        description: "超现实主义大师，以精细写实技法描绘荒诞梦境，偏执批判法的实践者。",
+        keyFeatures: [
+          "精细如照片的写实技法",
+          "色彩丰富鲜艳，对比强烈",
+          "潜意识梦境，荒诞意象",
+          "融化的时钟、大象等标志性符号",
+        ],
+      },
+    ],
+    keyDifferences: [
+      {
+        dimension: "brushstroke",
+        dimensionLabel: "笔触/技法",
+        description: "毕加索：几何块面分割，笔触消失于形式解构中；达利：精细如照片的学院派写实技法，纤毫毕现。",
+      },
+      {
+        dimension: "color",
+        dimensionLabel: "色彩",
+        description: "毕加索（立体主义时期）：棕灰赭等中性色，低调克制；达利：色彩丰富鲜艳，强烈对比，视觉冲击强。",
+      },
+      {
+        dimension: "theme",
+        dimensionLabel: "主题",
+        description: "毕加索：静物、乐器、肖像的形式解构；达利：融化的时钟、长脚大象、燃烧的长颈鹿等潜意识梦境意象。",
+      },
+      {
+        dimension: "composition",
+        dimensionLabel: "构图",
+        description: "毕加索：多视角同时呈现，打破单一透视；达利：严格遵循传统透视法，即使梦境也写实呈现。",
+      },
+    ],
+    paintingIds: ["4", "6", "15", "16", "17", "18"],
+    background: "毕加索和达利都是20世纪最具影响力的西班牙艺术家。毕加索年长23岁，是现代艺术的奠基人，达利年轻时曾崇拜毕加索。两人在形式探索上都极具革命性，但毕加索走向了理性的立体主义解构，达利则走向了非理性的超现实梦境。",
+  },
+  {
+    id: "vangogh-cezanne",
+    title: "梵高 vs 塞尚：后印象派的两条路",
+    titleEn: "Van Gogh vs Cézanne",
+    subtitle: "情感的火焰 vs 形式的秩序",
+    difficulty: "hard",
+    items: [
+      {
+        id: "vangogh",
+        label: "文森特·梵高",
+        labelEn: "Vincent van Gogh",
+        type: "artist",
+        description: "后印象派的情感表达者，以主观色彩和动态笔触传递内心激情。",
+        keyFeatures: [
+          "主观的强烈色彩，情绪化",
+          "流动的旋涡状笔触，充满动势",
+          "画面整体处于能量流动中",
+          "情感优先，为表达可扭曲现实",
+        ],
+      },
+      {
+        id: "cezanne",
+        label: "保罗·塞尚",
+        labelEn: "Paul Cézanne",
+        type: "artist",
+        description: "\"现代艺术之父\"，以几何体简化自然，追求永恒的形式秩序。",
+        keyFeatures: [
+          "经过理性分析的色彩，结构化",
+          "平行排列的块状笔触，稳定秩序",
+          "画面如建筑般坚实稳固",
+          "形式优先，用几何体重构自然",
+        ],
+      },
+    ],
+    keyDifferences: [
+      {
+        dimension: "brushstroke",
+        dimensionLabel: "笔触",
+        description: "梵高：流动的旋涡状，充满能量和动势；塞尚：平行排列的块状笔触，像砌砖一样构建画面。",
+      },
+      {
+        dimension: "composition",
+        dimensionLabel: "构图",
+        description: "梵高：画面充满动态，空间扭曲为情感服务；塞尚：画面坚实稳固，用圆柱体、球体、锥体重构自然。",
+      },
+      {
+        dimension: "color",
+        dimensionLabel: "色彩",
+        description: "梵高：主观情绪化的色彩，为表达可超越自然；塞尚：理性分析的色彩，服务于形式结构。",
+      },
+      {
+        dimension: "emotion",
+        dimensionLabel: "情感",
+        description: "梵高：情感的火焰，炽热而外放；塞尚：形式的秩序，冷静而内敛。",
+      },
+    ],
+    paintingIds: ["1", "12", "13"],
+    background: "梵高和塞尚是后印象派最重要的两位代表，都超越了印象派对瞬间光影的捕捉，走向更主观的表达。梵高的道路通向表现主义，塞尚的道路通向立体主义和现代形式主义。塞尚被誉为\"现代艺术之父\"，毕加索曾说\"塞尚是我们所有人的父亲\"。",
+  },
+];
+
+export function generateCampQuestions(combination: ConfusionCampCombination): ConfusionCampQuestion[] {
+  const questions: ConfusionCampQuestion[] = [];
+  const relevantPaintings = paintings.filter((p) => combination.paintingIds.includes(p.id));
+  const shuffled = shuffle(relevantPaintings);
+
+  shuffled.forEach((painting, index) => {
+    const correctItem = combination.items.find(
+      (item) => painting.artist.includes(item.label.split("·")[0]) || item.label.includes(painting.artist)
+    );
+    if (!correctItem) return;
+
+    const allItemLabels = combination.items.map((i) => i.label);
+    const options = shuffle(allItemLabels);
+
+    const keyDims = combination.keyDifferences.slice(0, 3).map((d) => d.dimension);
+
+    const primaryDiff = combination.keyDifferences.find((d) => d.dimension === keyDims[0]);
+    const confusionExplanation = primaryDiff
+      ? `这幅画容易被误判的关键在于「${primaryDiff.dimensionLabel}」：${primaryDiff.description}`
+      : "注意观察笔触、色彩和构图的细微差异。";
+
+    questions.push({
+      id: `q-${combination.id}-${index}-${Date.now()}`,
+      paintingId: painting.id,
+      questionType: "artist",
+      questionText: "这幅画作的作者是谁？",
+      options,
+      correctAnswer: correctItem.label,
+      correctItemId: correctItem.id,
+      confusionExplanation,
+      keyDimensions: keyDims,
+    });
+  });
+
+  return questions.slice(0, Math.min(5, questions.length));
+}
+
+function shuffle<T>(arr: T[]): T[] {
+  const copy = [...arr];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
+export function generateWeaknessQuestions(
+  combination: ConfusionCampCombination,
+  weakItemIds: string[]
+): ConfusionCampQuestion[] {
+  const questions = generateCampQuestions(combination);
+  const weakQuestions = questions.filter((q) => weakItemIds.includes(q.correctItemId));
+  return weakQuestions.length > 0 ? weakQuestions : questions.slice(0, 3);
+}
+
+export function analyzeMisjudgments(
+  answers: ConfusionCampAnswer[],
+  combination: ConfusionCampCombination
+): StyleIdentificationReport {
+  const totalQuestions = answers.length;
+  const correctCount = answers.filter((a) => a.isCorrect).length;
+  const accuracy = totalQuestions > 0 ? correctCount / totalQuestions : 0;
+  const avgTime =
+    totalQuestions > 0 ? answers.reduce((sum, a) => sum + a.timeSpent, 0) / totalQuestions : 0;
+
+  const errorAnswers = answers.filter((a) => !a.isCorrect);
+  const patternMap = new Map<string, MisjudgmentPattern>();
+
+  errorAnswers.forEach((answer) => {
+    const pair = [answer.correctItemId, answer.selectedItemId].filter(Boolean).sort().join("|");
+    if (!pair) return;
+    const existing = patternMap.get(pair);
+    if (existing) {
+      existing.count++;
+    } else {
+      const [id1, id2] = pair.split("|");
+      const item1 = combination.items.find((i) => i.id === id1);
+      const item2 = combination.items.find((i) => i.id === id2);
+      const relevantDiffs = combination.keyDifferences.filter(
+        (d) =>
+          d.description.includes(item1?.label.split("·")[0] || "") ||
+          d.description.includes(item2?.label.split("·")[0] || "") ||
+          true
+      );
+      patternMap.set(pair, {
+        confusedPair: [id1, id2],
+        count: 1,
+        dimensions: relevantDiffs.slice(0, 2).map((d) => d.dimension),
+        description: `多次将「${item1?.label || "?"}」与「${item2?.label || "?"}」混淆`,
+        tip: relevantDiffs[0]?.description || "仔细观察关键差异维度。",
+      });
+    }
+  });
+
+  const misjudgmentPatterns = Array.from(patternMap.values()).sort((a, b) => b.count - a.count);
+
+  const dimensionErrors: Record<ConfusionDimension, { total: number; wrong: number }> = {
+    color: { total: 0, wrong: 0 },
+    brushstroke: { total: 0, wrong: 0 },
+    light: { total: 0, wrong: 0 },
+    composition: { total: 0, wrong: 0 },
+    theme: { total: 0, wrong: 0 },
+    emotion: { total: 0, wrong: 0 },
+  };
+
+  answers.forEach((answer) => {
+    const question = generateCampQuestions(combination).find((q) => q.id === answer.questionId);
+    if (!question) return;
+    question.keyDimensions.forEach((dim) => {
+      dimensionErrors[dim].total++;
+      if (!answer.isCorrect) dimensionErrors[dim].wrong++;
+    });
+  });
+
+  const weakDimensions: { dimension: ConfusionDimension; label: string; errorRate: number }[] = [];
+  const strongDimensions: { dimension: ConfusionDimension; label: string; accuracy: number }[] = [];
+
+  (Object.keys(dimensionErrors) as ConfusionDimension[]).forEach((dim) => {
+    const { total, wrong } = dimensionErrors[dim];
+    if (total > 0) {
+      const errorRate = wrong / total;
+      const acc = 1 - errorRate;
+      if (errorRate >= 0.4) {
+        weakDimensions.push({ dimension: dim, label: DIMENSION_LABELS[dim], errorRate });
+      }
+      if (acc >= 0.8) {
+        strongDimensions.push({ dimension: dim, label: DIMENSION_LABELS[dim], accuracy: acc });
+      }
+    }
+  });
+
+  weakDimensions.sort((a, b) => b.errorRate - a.errorRate);
+  strongDimensions.sort((a, b) => b.accuracy - a.accuracy);
+
+  let progressMessage = "";
+  if (accuracy >= 0.9) progressMessage = "🏆 大师级表现！你已经能精准分辨这些极易混淆的风格了。";
+  else if (accuracy >= 0.7) progressMessage = "✨ 优秀！你已经掌握了大部分关键差异，继续巩固薄弱环节。";
+  else if (accuracy >= 0.5) progressMessage = "📈 不错的开端！重点突破报告中指出的误判模式，会有显著提升。";
+  else progressMessage = "💪 这正是训练的意义！按照报告中的建议反复练习，你会越来越敏锐。";
+
+  const improvementTips: string[] = [];
+  if (weakDimensions.length > 0) {
+    improvementTips.push(
+      `重点关注「${weakDimensions.map((w) => w.label).join("、")}」维度，这是你最容易出错的判断依据。`
+    );
+  }
+  misjudgmentPatterns.slice(0, 2).forEach((p) => {
+    improvementTips.push(p.tip);
+  });
+  if (avgTime > 10000) {
+    improvementTips.push("尝试加快判断速度，第一印象往往是最准确的。");
+  }
+  if (improvementTips.length === 0) {
+    improvementTips.push("继续挑战更高难度的混淆组合，挑战更多艺术家组合！");
+  }
+
+  return {
+    totalQuestions,
+    correctCount,
+    accuracy,
+    averageTimePerQuestion: avgTime,
+    misjudgmentPatterns,
+    weakDimensions,
+    strongDimensions,
+    progressMessage,
+    improvementTips,
+  };
+}
+
+export function getAllCampCombinations(): ConfusionCampCombination[] {
+  return [...confusionCampCombinations];
+}
+
+export function getCampCombinationById(id: string): ConfusionCampCombination | undefined {
+  return confusionCampCombinations.find((c) => c.id === id);
+}
