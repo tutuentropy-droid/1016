@@ -33,6 +33,27 @@ export interface ArtistInfo {
   country?: string;
 }
 
+export interface StyleDimension {
+  color: string;
+  brushstroke: string;
+  composition: string;
+  theme: string;
+  emotion: string;
+}
+
+export interface ArtistPeriod {
+  id: string;
+  artistName: string;
+  periodName: string;
+  periodNameEn: string;
+  yearRange: string;
+  startYear: number;
+  endYear: number;
+  description: string;
+  style: StyleDimension;
+  order: number;
+}
+
 export interface Painting {
   id: string;
   title: string;
@@ -48,6 +69,7 @@ export interface Painting {
   difficulty: Difficulty;
   clues: Clue[];
   zoomRegions?: ZoomRegion[];
+  periodId?: string;
 }
 
 export const artistInfos: ArtistInfo[] = [
@@ -90,6 +112,225 @@ export const artistRelations: ArtistRelation[] = [
 
 export const allCountries = Array.from(new Set(artistInfos.map(a => a.country).filter(Boolean))) as string[];
 
+export const artistPeriods: ArtistPeriod[] = [
+  {
+    id: "picasso-blue",
+    artistName: "巴勃罗·毕加索",
+    periodName: "蓝色时期",
+    periodNameEn: "Blue Period",
+    yearRange: "1901-1904",
+    startYear: 1901,
+    endYear: 1904,
+    description: "受好友卡萨吉马斯自杀影响，毕加索以忧郁的蓝色调描绘贫困、孤独与苦难。",
+    style: {
+      color: "以深蓝、蓝绿等冷色调为主，单色倾向强烈，色彩压抑深沉",
+      brushstroke: "笔触较为克制内敛，线条流畅但带有沉重感",
+      composition: "构图简洁，人物形象拉长瘦削，常以剪影式轮廓呈现",
+      theme: "乞丐、流浪汉、盲人、母亲与孩子等社会边缘人物",
+      emotion: "忧郁、孤独、绝望、悲悯，充满存在主义式的悲凉",
+    },
+    order: 1,
+  },
+  {
+    id: "picasso-rose",
+    artistName: "巴勃罗·毕加索",
+    periodName: "玫瑰时期",
+    periodNameEn: "Rose Period",
+    yearRange: "1904-1906",
+    startYear: 1904,
+    endYear: 1906,
+    description: "与恋人费尔南德·奥利维耶相遇后，色调转为温暖的粉红与橘红，主题也更为轻松。",
+    style: {
+      color: "玫瑰红、橘红、粉色等暖色调为主，色彩明亮温暖",
+      brushstroke: "笔触更为柔和轻盈，造型趋于圆润饱满",
+      composition: "人物造型更为丰满，场景多带有马戏团与戏剧元素",
+      theme: "马戏团演员、杂技艺人、小丑、恋人等充满生活气息的主题",
+      emotion: "温柔、浪漫、怀旧，带有一丝苦涩的诗意",
+    },
+    order: 2,
+  },
+  {
+    id: "picasso-african",
+    artistName: "巴勃罗·毕加索",
+    periodName: "非洲时期",
+    periodNameEn: "African Period",
+    yearRange: "1906-1909",
+    startYear: 1906,
+    endYear: 1909,
+    description: "受非洲面具和伊比利亚雕塑启发，开始探索几何化与简化形式，为立体主义奠基。",
+    style: {
+      color: "色调趋于土红、赭石、棕色等原始质朴的大地色系",
+      brushstroke: "笔触粗犷有力，轮廓线变得硬朗明确",
+      composition: "人物面部几何化、面具化，身体造型简化为块面结构",
+      theme: "女性裸体、原始仪式感的人物形象",
+      emotion: "神秘、原始、野性，充满对异质文化的敬畏与探索欲",
+    },
+    order: 3,
+  },
+  {
+    id: "picasso-cubism",
+    artistName: "巴勃罗·毕加索",
+    periodName: "立体主义时期",
+    periodNameEn: "Cubism Period",
+    yearRange: "1909-1919",
+    startYear: 1909,
+    endYear: 1919,
+    description: "与布拉克共同创立立体主义，将物体分解为多个几何视角同时呈现，彻底颠覆传统透视。",
+    style: {
+      color: "分析立体主义以棕、灰、赭等中性色为主；综合立体主义则引入拼贴与更多色彩",
+      brushstroke: "笔触消失于几何块面之中，以清晰的直线与弧线分割画面",
+      composition: "多视角同时呈现，物体被解构为几何碎片后重新组合",
+      theme: "静物、乐器、人物肖像、战争场景（如格尔尼卡）",
+      emotion: "理性解构、智性探索，后期则带有强烈的政治与情感表达",
+    },
+    order: 4,
+  },
+  {
+    id: "picasso-late",
+    artistName: "巴勃罗·毕加索",
+    periodName: "晚期多变时期",
+    periodNameEn: "Late Period",
+    yearRange: "1920-1973",
+    startYear: 1920,
+    endYear: 1973,
+    description: "风格更加自由多变，融合新古典主义、超现实主义等元素，晚年创作精力依然旺盛。",
+    style: {
+      color: "色彩极为丰富大胆，有时强烈对比，有时和谐统一",
+      brushstroke: "笔触极为自由，从精细到粗犷随心所欲",
+      composition: "不断尝试新的构图与变形，常向艺术大师致敬",
+      theme: "斗牛、画家与模特、变形肖像、神话场景",
+      emotion: "生命的狂欢、爱情的炽热、对死亡的思考，充满原始生命力",
+    },
+    order: 5,
+  },
+  {
+    id: "vangogh-dutch",
+    artistName: "文森特·梵高",
+    periodName: "荷兰时期",
+    periodNameEn: "Dutch Period",
+    yearRange: "1881-1885",
+    startYear: 1881,
+    endYear: 1885,
+    description: "早期在荷兰的创作，深受米勒等现实主义画家影响，色调阴暗，关注农民生活。",
+    style: {
+      color: "以褐色、暗绿、深灰等暗色调为主，色彩厚重沉闷",
+      brushstroke: "笔触粗犷厚重，常用厚涂技法堆积颜料",
+      composition: "人物造型朴实笨拙，场景多为农舍、田野、工人",
+      theme: "农民、织工、乡村生活、静物如《吃土豆的人》",
+      emotion: "沉重、悲悯、对劳苦大众的深切同情",
+    },
+    order: 1,
+  },
+  {
+    id: "vangogh-paris",
+    artistName: "文森特·梵高",
+    periodName: "巴黎时期",
+    periodNameEn: "Paris Period",
+    yearRange: "1886-1888",
+    startYear: 1886,
+    endYear: 1888,
+    description: "在巴黎接触印象派与新印象派后，色彩骤然明亮，笔触也变得更为自由。",
+    style: {
+      color: "色彩开始明亮丰富，受点彩派影响使用小笔触并置",
+      brushstroke: "从厚重转向轻快，笔触短小灵动，带有抖动感",
+      composition: "开始关注光与色的变化，场景多为巴黎街景、花卉、自画像",
+      theme: "花卉静物、自画像、塞纳河畔、蒙马特风景",
+      emotion: "从抑郁中暂时复苏，充满对新艺术的兴奋与探索热情",
+    },
+    order: 2,
+  },
+  {
+    id: "vangogh-arles",
+    artistName: "文森特·梵高",
+    periodName: "阿尔勒时期",
+    periodNameEn: "Arles Period",
+    yearRange: "1888-1889",
+    startYear: 1888,
+    endYear: 1889,
+    description: "法国南部阿尔勒的阳光点燃了梵高最辉煌的创作期，黄色调和旋涡笔触成为标志。",
+    style: {
+      color: "强烈的黄色、橙色、蓝色互补对比，色彩饱和度达到极致",
+      brushstroke: "标志性的旋涡状、波浪状厚涂笔触，充满动势与能量",
+      composition: "画面充满动感，物体轮廓扭曲变形以表达情感",
+      theme: "向日葵、麦田、咖啡馆、黄房子、星空、花园",
+      emotion: "狂热、喜悦、对生命的极致热爱，夹杂精神危机前的躁动",
+    },
+    order: 3,
+  },
+  {
+    id: "vangogh-saintremy",
+    artistName: "文森特·梵高",
+    periodName: "圣雷米时期",
+    periodNameEn: "Saint-Rémy Period",
+    yearRange: "1889-1890",
+    startYear: 1889,
+    endYear: 1890,
+    description: "在圣雷米精神病院期间的创作，《星月夜》即诞生于此，笔触更加奔放扭曲。",
+    style: {
+      color: "蓝紫色调与金黄色交织，色彩对比强烈而神秘",
+      brushstroke: "旋涡状笔触达到巅峰，整个画面处于流动的能量场中",
+      composition: "柏树、星空、麦田等被极端扭曲变形，空间感被消解",
+      theme: "星月夜、柏树、麦田群鸦、医院花园、自画像",
+      emotion: "精神挣扎与艺术升华并存，在痛苦中达到创造力的顶峰",
+    },
+    order: 4,
+  },
+  {
+    id: "monet-early",
+    artistName: "克劳德·莫奈",
+    periodName: "早期印象派时期",
+    periodNameEn: "Early Impressionism",
+    yearRange: "1860-1880",
+    startYear: 1860,
+    endYear: 1880,
+    description: "印象派的奠基时期，《日出·印象》即诞生于此，开创户外写生与捕捉瞬间光影的新范式。",
+    style: {
+      color: "色彩明亮鲜活，打破传统暗色调，注重光色的瞬间变化",
+      brushstroke: "快速松散的笔触，细碎短促，不求精细轮廓",
+      composition: "构图随意自然，常取不对称布局，捕捉日常生活片段",
+      theme: "塞纳河畔、日出日落、海滨风景、庭院人物、城市街景",
+      emotion: "轻松愉悦，充满对自然光影的迷恋与革新的热情",
+    },
+    order: 1,
+  },
+  {
+    id: "monet-mature",
+    artistName: "克劳德·莫奈",
+    periodName: "成熟期印象派",
+    periodNameEn: "Mature Impressionism",
+    yearRange: "1880-1900",
+    startYear: 1880,
+    endYear: 1900,
+    description: "在吉维尼花园定居后，开始系统探索同一场景在不同光线下的系列画作（干草堆、大教堂）。",
+    style: {
+      color: "色彩更加丰富微妙，系列画作中同一主题呈现出截然不同的色调",
+      brushstroke: "笔触更加融合，色彩层叠丰富，注重整体氛围的营造",
+      composition: "构图趋于稳定和谐，开始追求画面的装饰性与平面感",
+      theme: "干草堆系列、鲁昂大教堂系列、睡莲初期、吉维尼花园",
+      emotion: "宁静沉思，对时间流逝与光影变幻的哲理性感悟",
+    },
+    order: 2,
+  },
+  {
+    id: "monet-late",
+    artistName: "克劳德·莫奈",
+    periodName: "晚年睡莲时期",
+    periodNameEn: "Late Water Lilies",
+    yearRange: "1900-1926",
+    startYear: 1900,
+    endYear: 1926,
+    description: "晚年因白内障视力衰退，创作更加抽象自由，大型睡莲壁画成为对光影的终极探索。",
+    style: {
+      color: "色彩趋于抽象，蓝、绿、粉、紫等色调相互交融，几乎没有明确界限",
+      brushstroke: "笔触极为自由奔放，画面趋于抽象表现，几乎消解了具象形体",
+      composition: "没有地平线与空间透视，水面倒影与真实景物融为一体，形成无限延伸的空间",
+      theme: "睡莲池系列、日本桥、花园水景、大型装饰壁画",
+      emotion: "超然物外的宁静，对自然与生命本质的冥想，接近东方禅宗的意境",
+    },
+    order: 3,
+  },
+];
+
 export const paintings: Painting[] = [
   {
     id: "1",
@@ -114,6 +355,7 @@ export const paintings: Painting[] = [
       { x: 60, y: 10, w: 30, h: 25, label: "旋涡状星云" },
       { x: 5, y: 70, w: 25, h: 25, label: "柏树剪影" },
     ],
+    periodId: "vangogh-saintremy",
   },
   {
     id: "2",
@@ -160,6 +402,7 @@ export const paintings: Painting[] = [
     zoomRegions: [
       { x: 40, y: 40, w: 20, h: 20, label: "日出的太阳" },
     ],
+    periodId: "monet-early",
   },
   {
     id: "4",
@@ -183,6 +426,7 @@ export const paintings: Painting[] = [
     zoomRegions: [
       { x: 30, y: 5, w: 40, h: 30, label: "悲鸣的公牛与马" },
     ],
+    periodId: "picasso-late",
   },
   {
     id: "5",
@@ -341,6 +585,7 @@ export const paintings: Painting[] = [
       { type: "style", label: "画风特点", content: "几乎没有明确的轮廓线，水面倒影与真实景物融为一体，色彩丰富而微妙" },
       { type: "key", label: "关键线索", content: "是印象派创始人晚年的系列作品；画了250多幅同主题；晚年白内障近乎失明仍作画" },
     ],
+    periodId: "monet-mature",
   },
   {
     id: "12",
@@ -361,8 +606,189 @@ export const paintings: Painting[] = [
       { type: "style", label: "画风特点", content: "强烈的黄色调为主，厚涂的笔触表现花瓣质感，充满生命力" },
       { type: "key", label: "关键线索", content: "为迎接好友高更来访而装饰房间的系列画；共画了多幅向日葵；画家一生只卖出过一幅画" },
     ],
+    periodId: "vangogh-arles",
+  },
+  {
+    id: "13",
+    title: "吃土豆的人",
+    titleEn: "The Potato Eaters",
+    artist: "文森特·梵高",
+    year: "1885",
+    movement: "现实主义",
+    region: "荷兰",
+    country: "荷兰",
+    decade: 1880,
+    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b1/Van_Gogh_-_The_Potato_Eaters_-_Google_Art_Project.jpg/1280px-Van_Gogh_-_The_Potato_Eaters_-_Google_Art_Project.jpg",
+    description: "梵高荷兰时期的代表作，描绘农民家庭围坐桌前吃土豆的场景，色调阴暗沉重，体现对劳苦大众的深切同情。",
+    difficulty: "hard",
+    clues: [
+      { type: "basic", label: "年代范围", content: "创作于 19 世纪 80 年代中期（1885年）" },
+      { type: "basic", label: "创作地区", content: "画家在荷兰纽南的乡村创作" },
+      { type: "style", label: "画风特点", content: "以褐色、暗绿等暗色调为主，笔触厚重粗犷，人物造型朴实笨拙" },
+      { type: "key", label: "关键线索", content: "画家早期深受米勒现实主义影响；此画主题是农民生活；色调阴暗与后期明亮风格形成鲜明对比" },
+    ],
+    periodId: "vangogh-dutch",
+  },
+  {
+    id: "14",
+    title: "自画像（巴黎时期）",
+    titleEn: "Self-Portrait (Paris)",
+    artist: "文森特·梵高",
+    year: "1887",
+    movement: "后印象派",
+    region: "法国",
+    country: "荷兰",
+    decade: 1880,
+    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/Vincent_van_Gogh_-_Self-Portrait_-_Google_Art_Project.jpg/800px-Vincent_van_Gogh_-_Self-Portrait_-_Google_Art_Project.jpg",
+    description: "梵高在巴黎时期的自画像，色彩开始变得明亮，使用点彩派的小笔触，显示出受印象派影响的转变。",
+    difficulty: "normal",
+    clues: [
+      { type: "basic", label: "年代范围", content: "创作于 19 世纪 80 年代末（1887年）" },
+      { type: "basic", label: "创作地区", content: "画家在法国巴黎居住期间" },
+      { type: "style", label: "画风特点", content: "色彩明亮丰富，使用小笔触并置，受新印象派点彩技法影响" },
+      { type: "key", label: "关键线索", content: "画家在此时期结识了高更、毕沙罗等印象派画家；画风从阴暗转向明亮的关键过渡期" },
+    ],
+    periodId: "vangogh-paris",
+  },
+  {
+    id: "15",
+    title: "亚维农少女",
+    titleEn: "Les Demoiselles d'Avignon",
+    artist: "巴勃罗·毕加索",
+    year: "1907",
+    movement: "立体主义",
+    region: "西班牙/法国",
+    country: "西班牙",
+    decade: 1900,
+    imageUrl: "https://upload.wikimedia.org/wikipedia/en/thumb/4/4c/Les_Demoiselles_d%27Avignon.jpg/1280px-Les_Demoiselles_d%27Avignon.jpg",
+    description: "立体主义的开山之作，受非洲面具启发将人物面孔几何化、面具化，彻底颠覆传统绘画的透视法则。",
+    difficulty: "hard",
+    clues: [
+      { type: "basic", label: "年代范围", content: "创作于 20 世纪初（1907年）" },
+      { type: "basic", label: "创作地区", content: "画家在巴黎的工作室中创作" },
+      { type: "style", label: "画风特点", content: "人物面部几何化、面具化，身体简化为块面结构，多视角同时呈现" },
+      { type: "key", label: "关键线索", content: "此画被视为立体主义的开山之作；受非洲面具和伊比利亚雕塑启发；当时备受争议" },
+    ],
+    periodId: "picasso-african",
+  },
+  {
+    id: "16",
+    title: "弹吉他的老人",
+    titleEn: "The Old Guitarist",
+    artist: "巴勃罗·毕加索",
+    year: "1903",
+    movement: "后印象派",
+    region: "西班牙/法国",
+    country: "西班牙",
+    decade: 1900,
+    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4f/Picasso_old_guitarist_1903.jpg/800px-Picasso_old_guitarist_1903.jpg",
+    description: "毕加索蓝色时期的代表作，以单一的蓝色调描绘一位瘦弱的盲人吉他手，充满忧郁与悲悯。",
+    difficulty: "normal",
+    clues: [
+      { type: "basic", label: "年代范围", content: "创作于 20 世纪初（1903年）" },
+      { type: "basic", label: "创作地区", content: "画家在西班牙巴塞罗那和法国巴黎之间辗转" },
+      { type: "style", label: "画风特点", content: "以深蓝、蓝绿等冷色调为主，单色倾向强烈，人物形象拉长瘦削" },
+      { type: "key", label: "关键线索", content: "画家好友卡萨吉马斯自杀后陷入抑郁；这一时期全部使用蓝色调；主题多为社会边缘人物" },
+    ],
+    periodId: "picasso-blue",
+  },
+  {
+    id: "17",
+    title: "拿烟斗的男孩",
+    titleEn: "Boy with a Pipe",
+    artist: "巴勃罗·毕加索",
+    year: "1905",
+    movement: "后印象派",
+    region: "法国",
+    country: "西班牙",
+    decade: 1900,
+    imageUrl: "https://upload.wikimedia.org/wikipedia/en/thumb/3/3b/Picasso_garcon_a_la_pipe.jpg/800px-Picasso_garcon_a_la_pipe.jpg",
+    description: "毕加索玫瑰时期的代表作，以温暖的粉红色调描绘一位手持烟斗的少年，曾创下当时拍卖最高纪录。",
+    difficulty: "normal",
+    clues: [
+      { type: "basic", label: "年代范围", content: "创作于 20 世纪初（1905年）" },
+      { type: "basic", label: "创作地区", content: "画家在法国巴黎蒙马特高地居住" },
+      { type: "style", label: "画风特点", content: "玫瑰红、橘红等暖色调为主，人物造型圆润饱满，笔触柔和轻盈" },
+      { type: "key", label: "关键线索", content: "画家与恋人费尔南德相遇后心情好转；主题常涉及马戏团演员；此画曾拍出1.04亿美元天价" },
+    ],
+    periodId: "picasso-rose",
+  },
+  {
+    id: "18",
+    title: "静物与藤椅",
+    titleEn: "Still Life with Chair Caning",
+    artist: "巴勃罗·毕加索",
+    year: "1912",
+    movement: "立体主义",
+    region: "法国",
+    country: "西班牙",
+    decade: 1910,
+    imageUrl: "https://upload.wikimedia.org/wikipedia/en/thumb/0/0a/Still_Life_with_Chair_Caning.jpg/800px-Still_Life_with_Chair_Caning.jpg",
+    description: "综合立体主义的代表作，首次在绘画中使用拼贴技法，将真实的藤椅图案油布贴在画布上。",
+    difficulty: "hard",
+    clues: [
+      { type: "basic", label: "年代范围", content: "创作于 20 世纪 10 年代（1912年）" },
+      { type: "basic", label: "创作地区", content: "画家在法国巴黎与布拉克共同探索立体主义" },
+      { type: "style", label: "画风特点", content: "以棕、灰、赭等中性色为主，几何块面分割画面，首次使用拼贴技法" },
+      { type: "key", label: "关键线索", content: "此画首次引入拼贴技术；综合立体主义的开端；用真实物质挑战绘画的传统定义" },
+    ],
+    periodId: "picasso-cubism",
+  },
+  {
+    id: "19",
+    title: "鲁昂大教堂（黄昏）",
+    titleEn: "Rouen Cathedral (Sunset)",
+    artist: "克劳德·莫奈",
+    year: "1894",
+    movement: "印象派",
+    region: "法国",
+    country: "法国",
+    decade: 1890,
+    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Claude_Monet_-_Rouen_Cathedral_Facade_%28Sunset%29_-_Google_Art_Project.jpg/800px-Claude_Monet_-_Rouen_Cathedral_Facade_%28Sunset%29_-_Google_Art_Project.jpg",
+    description: "莫奈鲁昂大教堂系列之一，描绘黄昏时分光线照在教堂立面上的微妙变化，色彩层叠丰富。",
+    difficulty: "normal",
+    clues: [
+      { type: "basic", label: "年代范围", content: "创作于 19 世纪 90 年代（1894年）" },
+      { type: "basic", label: "创作地区", content: "画家在法国诺曼底地区的鲁昂市" },
+      { type: "style", label: "画风特点", content: "笔触更加融合，色彩层叠丰富，注重整体氛围营造，构图稳定和谐" },
+      { type: "key", label: "关键线索", content: "同一场景画了30多幅不同光线版本；系列画作是莫奈成熟期的标志；对时间与光影的哲理性探索" },
+    ],
+    periodId: "monet-mature",
+  },
+  {
+    id: "20",
+    title: "睡莲（大型壁画）",
+    titleEn: "Water Lilies (Grandes Décorations)",
+    artist: "克劳德·莫奈",
+    year: "1916-1926",
+    movement: "印象派",
+    region: "法国",
+    country: "法国",
+    decade: 1910,
+    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6d/Claude_Monet_-_Water_Lilies_-_1916-1926.jpg/1280px-Claude_Monet_-_Water_Lilies_-_1916-1926.jpg",
+    description: "莫奈晚年为巴黎橘园美术馆创作的大型睡莲壁画，没有地平线，画面趋于抽象，是对光影的终极探索。",
+    difficulty: "hard",
+    clues: [
+      { type: "basic", label: "年代范围", content: "创作于 20 世纪初至中期（1916-1926年）" },
+      { type: "basic", label: "创作地区", content: "画家在法国吉维尼花园的睡莲池边" },
+      { type: "style", label: "画风特点", content: "没有地平线与空间透视，色彩趋于抽象，笔触极为自由奔放" },
+      { type: "key", label: "关键线索", content: "画家晚年因白内障视力衰退；画作尺寸巨大如壁画；被视为抽象表现主义的先驱" },
+    ],
+    periodId: "monet-late",
   },
 ];
 
 export const allArtists = Array.from(new Set(paintings.map(p => p.artist)));
 export const allMovements = Array.from(new Set(paintings.map(p => p.movement)));
+export const artistsWithPeriods = Array.from(new Set(artistPeriods.map(p => p.artistName)));
+export function getPeriodsByArtist(artistName: string): ArtistPeriod[] {
+  return artistPeriods
+    .filter((p) => p.artistName === artistName)
+    .sort((a, b) => a.order - b.order);
+}
+export function getPaintingsByArtist(artistName: string): Painting[] {
+  return paintings.filter((p) => p.artist === artistName);
+}
+export function getPeriodById(periodId: string): ArtistPeriod | undefined {
+  return artistPeriods.find((p) => p.id === periodId);
+}

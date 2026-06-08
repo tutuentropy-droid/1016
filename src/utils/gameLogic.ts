@@ -2,8 +2,12 @@ import {
   paintings,
   allArtists,
   artistInfos,
+  artistsWithPeriods,
+  getPeriodsByArtist,
+  getPaintingsByArtist,
   type Painting,
   type Difficulty,
+  type ArtistPeriod,
 } from "@/data/paintings";
 import type { Confidence } from "@/store/useGameStore";
 
@@ -106,4 +110,70 @@ export function generateOptionsByDifficulty(
 
 export function generateOptions(correctArtist: string): string[] {
   return generateOptionsByDifficulty(correctArtist, "normal");
+}
+
+export interface EvolutionCase {
+  artistName: string;
+  periods: ArtistPeriod[];
+  paintings: Painting[];
+}
+
+export function generateEvolutionCase(): EvolutionCase | null {
+  const eligibleArtists = artistsWithPeriods.filter((artistName) => {
+    const periods = getPeriodsByArtist(artistName);
+    const artistPaintings = getPaintingsByArtist(artistName).filter((p) => p.periodId);
+    return periods.length >= 3 && artistPaintings.length >= periods.length;
+  });
+
+  if (eligibleArtists.length === 0) return null;
+
+  const artistName =
+    eligibleArtists[Math.floor(Math.random() * eligibleArtists.length)];
+  const periods = getPeriodsByArtist(artistName);
+  const artistPaintings = getPaintingsByArtist(artistName).filter((p) => p.periodId);
+
+  const selectedPaintings: Painting[] = [];
+  const usedPeriodIds = new Set<string>();
+
+  for (const period of periods) {
+    const periodPaintings = artistPaintings.filter(
+      (p) => p.periodId === period.id && !selectedPaintings.includes(p)
+    );
+    if (periodPaintings.length > 0) {
+      const chosen =
+        periodPaintings[Math.floor(Math.random() * periodPaintings.length)];
+      selectedPaintings.push(chosen);
+      usedPeriodIds.add(period.id);
+    }
+  }
+
+  const remainingPeriods = periods.filter((p) => !usedPeriodIds.has(p.id));
+  for (const period of remainingPeriods) {
+    const periodPaintings = artistPaintings.filter(
+      (p) => p.periodId === period.id && !selectedPaintings.includes(p)
+    );
+    if (periodPaintings.length > 0) {
+      const chosen =
+        periodPaintings[Math.floor(Math.random() * periodPaintings.length)];
+      selectedPaintings.push(chosen);
+    }
+  }
+
+  const shuffledPaintings = shuffle(selectedPaintings);
+
+  return {
+    artistName,
+    periods,
+    paintings: shuffledPaintings,
+  };
+}
+
+export function calculateEvolutionScore(
+  correctCount: number,
+  totalCount: number
+): { delta: number; bonus: number } {
+  const baseScorePerPainting = 40;
+  const delta = correctCount * baseScorePerPainting;
+  const bonus = correctCount === totalCount ? 60 : 0;
+  return { delta, bonus };
 }

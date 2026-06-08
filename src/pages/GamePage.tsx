@@ -1,5 +1,5 @@
 import { useCallback, useEffect } from "react";
-import { Search, Volume2, VolumeX, BookOpen, Network, Gamepad2 } from "lucide-react";
+import { Search, Volume2, VolumeX, BookOpen, Network, Gamepad2, TrendingUp, User } from "lucide-react";
 import ScoreBoard from "@/components/ScoreBoard";
 import PaintingCard from "@/components/PaintingCard";
 import OptionButton from "@/components/OptionButton";
@@ -14,7 +14,8 @@ import CaseBriefing from "@/components/CaseBriefing";
 import CollectionPanel from "@/components/CollectionPanel";
 import ArtRelationshipGraph from "@/components/ArtRelationshipGraph";
 import DailyTheme from "@/components/DailyTheme";
-import { useGameStore, type AppPage } from "@/store/useGameStore";
+import StyleEvolutionPanel from "@/components/StyleEvolutionPanel";
+import { useGameStore, type AppPage, type GameMode } from "@/store/useGameStore";
 import { audioManager } from "@/utils/audioManager";
 import { useState } from "react";
 
@@ -22,6 +23,11 @@ const NAV_ITEMS: { id: AppPage; label: string; en: string; icon: typeof Gamepad2
   { id: "game", label: "调查案件", en: "Investigation", icon: Gamepad2 },
   { id: "collection", label: "我的画廊", en: "Collection", icon: BookOpen },
   { id: "graph", label: "关系图谱", en: "Network", icon: Network },
+];
+
+const MODE_ITEMS: { id: GameMode; label: string; en: string; icon: typeof Gamepad2; desc: string }[] = [
+  { id: "standard", label: "艺术家鉴定", en: "Artist Detection", icon: User, desc: "经典模式：根据画作特征锁定艺术家" },
+  { id: "evolution", label: "风格进化追踪", en: "Style Evolution", icon: TrendingUp, desc: "进阶模式：理解同一艺术家不同阶段的风格演变" },
 ];
 
 function GameContent() {
@@ -33,6 +39,10 @@ function GameContent() {
     casePhase,
     setCasePhase,
     generateDailyTheme,
+    gameMode,
+    setGameMode,
+    startEvolutionCase,
+    evolutionArtist,
   } = useGameStore();
   const [soundEnabled, setSoundEnabled] = useState(true);
 
@@ -55,19 +65,33 @@ function GameContent() {
     generateDailyTheme();
   }, [nextQuestion, generateDailyTheme]);
 
+  useEffect(() => {
+    if (gameMode === "evolution" && !evolutionArtist) {
+      startEvolutionCase();
+    }
+  }, [gameMode, evolutionArtist, startEvolutionCase]);
+
+  const handleModeSwitch = (mode: GameMode) => {
+    audioManager.play("paper_flip");
+    setGameMode(mode);
+    if (mode === "evolution") {
+      startEvolutionCase();
+    }
+  };
+
   return (
     <div className="min-h-screen py-6 md:py-8 px-3 md:px-4 bg-paper-texture relative">
       <AmbientEffects />
       <HomeWallBackground />
 
-      {casePhase === "opening" && currentPainting && (
+      {gameMode === "standard" && casePhase === "opening" && currentPainting && (
         <CinematicOpening
           paintingId={currentPainting.id}
           onComplete={handleOpeningComplete}
         />
       )}
 
-      {casePhase === "briefing" && currentPainting && (
+      {gameMode === "standard" && casePhase === "briefing" && currentPainting && (
         <CaseBriefing
           painting={currentPainting}
           options={options}
@@ -109,6 +133,41 @@ function GameContent() {
           </div>
         </header>
 
+        <div className="mb-6 animate-fadeInUp" style={{ animationDelay: "50ms" }}>
+          <div className="flex items-center justify-center gap-2">
+            {MODE_ITEMS.map((item) => {
+              const Icon = item.icon;
+              const isActive = gameMode === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => handleModeSwitch(item.id)}
+                  className={`relative flex flex-col items-center gap-1 px-4 md:px-6 py-3 rounded-sm transition-all border-2 ${
+                    isActive
+                      ? "bg-gold text-white border-gold shadow-lg scale-[1.02]"
+                      : "bg-white/50 text-ink/60 border-ink/10 hover:text-ink hover:border-ink/30 hover:bg-white"
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <Icon size={16} strokeWidth={isActive ? 2.2 : 1.8} />
+                    <span className="font-display text-sm font-semibold">{item.label}</span>
+                  </div>
+                  <span className={`text-[9px] uppercase tracking-wider font-serif ${isActive ? "text-white/70" : "text-ink/40"}`}>
+                    {item.en}
+                  </span>
+                  {isActive && (
+                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-3 h-3 rounded-full bg-gold border-2 border-paper-texture rotate-45" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+          <p className="text-center text-xs text-ink/50 font-serif mt-2">
+            {MODE_ITEMS.find((m) => m.id === gameMode)?.desc}
+          </p>
+        </div>
+
+        {gameMode === "standard" ? (
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-5 md:gap-7">
           <div className="space-y-6">
             <div className="animate-fadeInUp" style={{ animationDelay: "80ms" }}>
@@ -186,11 +245,18 @@ function GameContent() {
             </div>
           </div>
         </div>
+        ) : (
+          <div className="max-w-4xl mx-auto">
+            <StyleEvolutionPanel />
+          </div>
+        )}
 
         <footer className="mt-14 md:mt-20 text-center text-[11px] text-ink/40 font-serif space-y-1 animate-fadeInUp" style={{ animationDelay: "700ms" }}>
           <p>所有画作图片均来自公共领域（Wikimedia Commons / Google Art Project）</p>
           <p className="tracking-widest uppercase text-[10px] typewriter-font">
-            — Case File #{currentPainting?.id.padStart(5, "0") || "00000"} · Active —
+            {gameMode === "standard"
+              ? `— Case File #${currentPainting?.id.padStart(5, "0") || "00000"} · Active —`
+              : `— Style Evolution · ${evolutionArtist || "Investigating"} —`}
           </p>
         </footer>
       </div>

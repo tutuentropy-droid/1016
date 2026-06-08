@@ -1,16 +1,19 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { Painting } from "@/data/paintings";
+import type { Painting, ArtistPeriod } from "@/data/paintings";
 import {
   pickRandomPainting,
   generateOptionsByDifficulty,
   calculateScore,
   getConfidenceMultiplier,
+  generateEvolutionCase,
+  calculateEvolutionScore,
 } from "@/utils/gameLogic";
 
 export type Confidence = "low" | "medium" | "high";
 export type CasePhase = "opening" | "briefing" | "investigating" | "answered";
 export type AppPage = "game" | "collection" | "graph";
+export type GameMode = "standard" | "evolution";
 
 export interface DailyTheme {
   id: string;
@@ -22,7 +25,13 @@ export interface DailyTheme {
   bonusMultiplier: number;
 }
 
+export interface EvolutionAssignment {
+  paintingId: string;
+  selectedPeriodId: string | null;
+}
+
 interface GameState {
+  gameMode: GameMode;
   currentPainting: Painting | null;
   options: string[];
   selectedAnswer: string | null;
@@ -43,14 +52,26 @@ interface GameState {
   unlockedPaintingIds: string[];
   activePage: AppPage;
   dailyTheme: DailyTheme | null;
+  evolutionArtist: string | null;
+  evolutionPeriods: ArtistPeriod[];
+  evolutionPaintings: Painting[];
+  evolutionAssignments: EvolutionAssignment[];
+  evolutionSubmitted: boolean;
+  evolutionCorrectCount: number;
+  evolutionScoreDelta: number;
   setCasePhase: (phase: CasePhase) => void;
   setFocusedDetail: (index: number | null) => void;
   setActivePage: (page: AppPage) => void;
+  setGameMode: (mode: GameMode) => void;
   nextQuestion: () => void;
   unlockClue: (index: number) => void;
   setConfidence: (level: Confidence) => void;
   submitAnswer: (answer: string) => void;
   generateDailyTheme: () => void;
+  startEvolutionCase: () => void;
+  assignPaintingToPeriod: (paintingId: string, periodId: string | null) => void;
+  submitEvolutionAnswer: () => void;
+  nextEvolutionCase: () => void;
 }
 
 const DAILY_THEMES = [
@@ -81,6 +102,7 @@ function seededRandom(seed: number): () => number {
 export const useGameStore = create<GameState>()(
   persist(
     (set, get) => ({
+      gameMode: "standard",
       currentPainting: null,
       options: [],
       selectedAnswer: null,
@@ -101,10 +123,18 @@ export const useGameStore = create<GameState>()(
       unlockedPaintingIds: [],
       activePage: "game",
       dailyTheme: null,
+      evolutionArtist: null,
+      evolutionPeriods: [],
+      evolutionPaintings: [],
+      evolutionAssignments: [],
+      evolutionSubmitted: false,
+      evolutionCorrectCount: 0,
+      evolutionScoreDelta: 0,
 
       setCasePhase: (phase: CasePhase) => set({ casePhase: phase }),
       setFocusedDetail: (index: number | null) => set({ focusedDetailIndex: index }),
       setActivePage: (page: AppPage) => set({ activePage: page }),
+      setGameMode: (mode: GameMode) => set({ gameMode: mode }),
 
       generateDailyTheme: () => {
         const today = getTodayString();
@@ -220,6 +250,80 @@ export const useGameStore = create<GameState>()(
           lastResultCorrect: isCorrect,
           unlockedPaintingIds: newUnlocked,
         });
+      },
+
+      startEvolutionCase: () => {
+        const evolutionCase = generateEvolutionCase();
+        if (!evolutionCase) return;
+        const { artistName, periods, paintings: casePaintings } = evolutionCase;
+        const assignments: EvolutionAssignment[] = casePaintings.map((p) => ({
+          paintingId: p.id,
+          selectedPeriodId: null,
+        }));
+        set({
+          evolutionArtist: artistName,
+          evolutionPeriods: periods,
+          evolutionPaintings: casePaintings,
+          evolutionAssignments: assignments,
+          evolutionSubmitted: false,
+          evolutionCorrectCount: 0,
+          evolutionScoreDelta: 0,
+        });
+      },
+
+      assignPaintingToPeriod: (paintingId: string, periodId: string | null) => {
+        const { evolutionAssignments, evolutionSubmitted } = get();
+        if (evolutionSubmitted) return;
+        const newAssignments = evolutionAssignments.map((a) =>
+          a.paintingId === paintingId ? { ...a, selectedPeriodId: periodId } : a
+        );
+        set({ evolutionAssignments: newAssignments });
+      },
+
+      submitEvolutionAnswer: () => {
+        const {
+          evolutionPaintings,
+          evolutionAssignments,
+          evolutionSubmitted,
+          totalScore,
+          unlockedPaintingIds,
+        } = get();
+        if (evolutionSubmitted) return;
+
+        let correctCount = 0;
+        evolutionPaintings.forEach((painting) => {
+          const assignment = evolutionAssignments.find((a) => a.paintingId === painting.id);
+          if (assignment && assignment.selectedPeriodId === painting.periodId) {
+            correctCount++;
+          }
+        });
+
+        const { delta, bonus } = calculateEvolutionScore(
+          correctCount,
+          evolutionPaintings.length
+        );
+
+        const newUnlocked = [...unlockedPaintingIds];
+        evolutionPaintings.forEach((p) => {
+          if (!newUnlocked.includes(p.id)) newUnlocked.push(p.id);
+        });
+
+        set({
+          evolutionSubmitted: true,
+          evolutionCorrectCount: correctCount,
+          evolutionScoreDelta: delta + bonus,
+          totalScore: Math.max(0, totalScore + delta + bonus),
+          unlockedPaintingIds: newUnlocked,
+          streak: correctCount === evolutionPaintings.length ? get().streak + 1 : 0,
+          bestStreak:
+            correctCount === evolutionPaintings.length
+              ? Math.max(get().bestStreak, get().streak + 1)
+              : get().bestStreak,
+        });
+      },
+
+      nextEvolutionCase: () => {
+        get().startEvolutionCase();
       },
     }),
     {
