@@ -2130,7 +2130,7 @@ export function generateCampQuestions(combination: ConfusionCampCombination): Co
   return questions.slice(0, Math.min(5, questions.length));
 }
 
-function shuffle<T>(arr: T[]): T[] {
+export function shuffle<T>(arr: T[]): T[] {
   const copy = [...arr];
   for (let i = copy.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -2927,4 +2927,316 @@ export function pickRandomTheftCase(excludeIds: string[] = []): TheftCase | null
       : theftCases.filter((c) => !excludeIds.includes(c.id));
   if (pool.length === 0) return null;
   return pool[Math.floor(Math.random() * pool.length)];
+}
+
+export type ConservationStatus = "excellent" | "good" | "fair" | "poor";
+export type AuthenticityRisk = "confirmed" | "low" | "medium" | "high" | "suspectedForgery";
+export type BidderPersonality = "aggressive" | "conservative" | "strategic" | "emotional" | "expert";
+export type MarketEventType = "artistSurge" | "authenticityDispute" | "styleTrend" | "museumInterest" | "celebrityPurchase" | "negativeNews";
+export type AuctionPhase = "intro" | "bidding" | "marketEvent" | "result" | "settlement";
+
+export interface AuctionPainting {
+  id: string;
+  paintingId: string;
+  title: string;
+  titleEn: string;
+  artist: string;
+  year: string;
+  movement: string;
+  imageUrl: string;
+  description: string;
+  baseEstimate: number;
+  lowEstimate: number;
+  highEstimate: number;
+  conservationStatus: ConservationStatus;
+  authenticityRisk: AuthenticityRisk;
+  provenanceQuality: number;
+  exhibitionHistory: number;
+  rarityScore: number;
+  styleHeat: number;
+  artistReputation: number;
+  hiddenTrueValue: number;
+  isActuallyForgery: boolean;
+  estimatedAppreciationRate: number;
+}
+
+export interface AuctionBidder {
+  id: string;
+  name: string;
+  avatar: string;
+  personality: BidderPersonality;
+  budget: number;
+  remainingBudget: number;
+  preferredArtists: string[];
+  preferredMovements: string[];
+  riskTolerance: number;
+  aggressionLevel: number;
+  expertiseLevel: number;
+  wonLots: string[];
+  description: string;
+}
+
+export interface MarketEvent {
+  id: string;
+  type: MarketEventType;
+  title: string;
+  description: string;
+  targetArtist?: string;
+  targetMovement?: string;
+  valueModifier: number;
+  heatModifier: number;
+  duration: "instant" | "remaining";
+}
+
+export interface BidRecord {
+  bidderId: string;
+  bidderName: string;
+  amount: number;
+  timestamp: number;
+  isPlayer: boolean;
+}
+
+export interface AuctionLotResult {
+  paintingId: string;
+  winningBidderId: string | null;
+  finalPrice: number;
+  isPlayerWin: boolean;
+  bids: BidRecord[];
+  marketEvents: MarketEvent[];
+  startTime: number;
+  endTime: number;
+}
+
+export interface PlayerCollectionItem {
+  auctionPaintingId: string;
+  paintingId: string;
+  purchasePrice: number;
+  currentValue: number;
+  purchaseRound: number;
+  isForgery: boolean;
+  appreciationRate: number;
+}
+
+export interface AuctionSettlement {
+  initialBudget: number;
+  finalBudget: number;
+  totalSpent: number;
+  collectionValue: number;
+  netWorth: number;
+  profitLoss: number;
+  returnRate: number;
+  collection: PlayerCollectionItem[];
+  totalLots: number;
+  wonLots: number;
+  forgeryCount: number;
+}
+
+const CONSERVATION_MULTIPLIER: Record<ConservationStatus, number> = {
+  excellent: 1.3,
+  good: 1.1,
+  fair: 0.85,
+  poor: 0.6,
+};
+
+const AUTHENTICITY_MULTIPLIER: Record<AuthenticityRisk, number> = {
+  confirmed: 1.25,
+  low: 1.1,
+  medium: 1.0,
+  high: 0.75,
+  suspectedForgery: 0.4,
+};
+
+export function generateAuctionPaintings(count: number = 6): AuctionPainting[] {
+  const shuffled = shuffle([...paintings]);
+  const selected = shuffled.slice(0, Math.min(count, shuffled.length));
+
+  return selected.map((p, idx) => {
+    const artistInfo = artistInfos.find((a) => a.name === p.artist);
+    const isOldMaster = artistInfo ? parseInt(artistInfo.era.split("-")[0]) < 1800 : false;
+    const isModern = artistInfo ? parseInt(artistInfo.era.split("-")[0]) >= 1850 : false;
+
+    const baseValue = isOldMaster
+      ? 5000000 + Math.random() * 20000000
+      : isModern
+      ? 1000000 + Math.random() * 8000000
+      : 500000 + Math.random() * 3000000;
+
+    const conservationStatuses: ConservationStatus[] = ["excellent", "good", "good", "fair", "poor"];
+    const authenticityRisks: AuthenticityRisk[] = ["confirmed", "low", "low", "medium", "high"];
+
+    const conservation = conservationStatuses[Math.floor(Math.random() * conservationStatuses.length)];
+    const authenticity = authenticityRisks[Math.floor(Math.random() * authenticityRisks.length)];
+    const isActuallyForgery = authenticity === "high" ? Math.random() < 0.6 : authenticity === "suspectedForgery" ? Math.random() < 0.85 : authenticity === "medium" ? Math.random() < 0.2 : Math.random() < 0.05;
+
+    const conservationMult = CONSERVATION_MULTIPLIER[conservation];
+    const authenticityMult = AUTHENTICITY_MULTIPLIER[authenticity];
+    const forgeryMult = isActuallyForgery ? 0.15 : 1;
+
+    const trueValue = Math.round(baseValue * conservationMult * authenticityMult * forgeryMult);
+    const displayedEstimate = Math.round(baseValue * conservationMult * (authenticity === "suspectedForgery" ? 0.5 : authenticityMult));
+
+    return {
+      id: `auction-${p.id}-${idx}`,
+      paintingId: p.id,
+      title: p.title,
+      titleEn: p.titleEn,
+      artist: p.artist,
+      year: p.year,
+      movement: p.movement,
+      imageUrl: p.imageUrl,
+      description: p.description,
+      baseEstimate: displayedEstimate,
+      lowEstimate: Math.round(displayedEstimate * 0.7),
+      highEstimate: Math.round(displayedEstimate * 1.4),
+      conservationStatus: conservation,
+      authenticityRisk: isActuallyForgery && authenticity !== "suspectedForgery" ? "medium" : authenticity,
+      provenanceQuality: Math.floor(Math.random() * 5) + 1,
+      exhibitionHistory: Math.floor(Math.random() * 5) + 1,
+      rarityScore: Math.floor(Math.random() * 5) + 1,
+      styleHeat: Math.floor(Math.random() * 5) + 3,
+      artistReputation: isOldMaster ? 5 : isModern ? 4 : 3,
+      hiddenTrueValue: trueValue,
+      isActuallyForgery,
+      estimatedAppreciationRate: isActuallyForgery ? -0.5 + Math.random() * 0.3 : isOldMaster ? 0.05 + Math.random() * 0.08 : isModern ? 0.02 + Math.random() * 0.06 : Math.random() * 0.04,
+    };
+  });
+}
+
+export const AUCTION_BIDDERS: Omit<AuctionBidder, "remainingBudget" | "wonLots">[] = [
+  {
+    id: "bidder-1",
+    name: "维克多·罗斯柴尔德",
+    avatar: "🎩",
+    personality: "expert",
+    budget: 80000000,
+    preferredArtists: ["列奥纳多·达·芬奇", "米开朗基罗", "伦勃朗", "约翰内斯·维米尔"],
+    preferredMovements: ["文艺复兴盛期", "荷兰黄金时代", "巴洛克"],
+    riskTolerance: 0.3,
+    aggressionLevel: 0.4,
+    expertiseLevel: 5,
+    description: "老牌贵族收藏家，对古典大师作品有独到眼光，极少犯错。",
+  },
+  {
+    id: "bidder-2",
+    name: "娜塔莎·科瓦连科",
+    avatar: "💎",
+    personality: "aggressive",
+    budget: 60000000,
+    preferredArtists: ["巴勃罗·毕加索", "萨尔瓦多·达利", "亨利·马蒂斯", "古斯塔夫·克里姆特"],
+    preferredMovements: ["立体主义", "超现实主义", "维也纳分离派"],
+    riskTolerance: 0.8,
+    aggressionLevel: 0.95,
+    expertiseLevel: 3,
+    description: "俄罗斯能源寡头之女，喜欢高调竞拍，志在必得，容易情绪化出价。",
+  },
+  {
+    id: "bidder-3",
+    name: "山本健一",
+    avatar: "🏯",
+    personality: "strategic",
+    budget: 45000000,
+    preferredArtists: ["文森特·梵高", "克劳德·莫奈", "保罗·塞尚", "皮埃尔·奥古斯特·雷诺阿"],
+    preferredMovements: ["印象派", "后印象派"],
+    riskTolerance: 0.5,
+    aggressionLevel: 0.6,
+    expertiseLevel: 4,
+    description: "日本科技企业家，对印象派有系统性收藏计划，冷静计算，不追高。",
+  },
+  {
+    id: "bidder-4",
+    name: "伊莎贝拉·加西亚",
+    avatar: "🌹",
+    personality: "emotional",
+    budget: 35000000,
+    preferredArtists: ["爱德华·蒙克", "迭戈·委拉斯开兹", "萨尔瓦多·达利"],
+    preferredMovements: ["表现主义", "巴洛克", "超现实主义"],
+    riskTolerance: 0.6,
+    aggressionLevel: 0.7,
+    expertiseLevel: 2,
+    description: "墨西哥酒店业女继承人，凭直觉和喜好购买，容易被作品故事打动。",
+  },
+  {
+    id: "bidder-5",
+    name: "詹姆斯·威尔逊三世",
+    avatar: "🗽",
+    personality: "conservative",
+    budget: 55000000,
+    preferredArtists: ["威廉·透纳", "约翰内斯·维米尔", "伦勃朗"],
+    preferredMovements: ["浪漫主义", "荷兰黄金时代"],
+    riskTolerance: 0.2,
+    aggressionLevel: 0.3,
+    expertiseLevel: 4,
+    description: "纽约老牌华尔街家族，只买经过验证的真迹，偏好保守投资，绝不碰存疑作品。",
+  },
+];
+
+export function generateAuctionBidders(count: number = 4): AuctionBidder[] {
+  const shuffled = shuffle([...AUCTION_BIDDERS]);
+  return shuffled.slice(0, count).map((b) => ({
+    ...b,
+    remainingBudget: b.budget,
+    wonLots: [],
+  }));
+}
+
+export const MARKET_EVENT_TEMPLATES: Omit<MarketEvent, "id">[] = [
+  {
+    type: "artistSurge",
+    title: "艺术家热度飙升",
+    description: "某博物馆宣布举办该艺术家大型回顾展，市场关注度激增！",
+    valueModifier: 1.35,
+    heatModifier: 3,
+    duration: "remaining",
+  },
+  {
+    type: "authenticityDispute",
+    title: "真伪争议",
+    description: "艺术史期刊发表论文质疑该作品归属，市场信心动摇！",
+    valueModifier: 0.6,
+    heatModifier: -2,
+    duration: "instant",
+  },
+  {
+    type: "styleTrend",
+    title: "风格潮流来袭",
+    description: "某艺术流派成为本届拍卖季最热门板块！",
+    valueModifier: 1.2,
+    heatModifier: 2,
+    duration: "remaining",
+  },
+  {
+    type: "museumInterest",
+    title: "博物馆意向收购",
+    description: "传闻某顶级博物馆对此作品表示收购意向！",
+    valueModifier: 1.45,
+    heatModifier: 4,
+    duration: "instant",
+  },
+  {
+    type: "celebrityPurchase",
+    title: "明星收藏效应",
+    description: "某知名名人被曝正关注此作品，粉丝和投资者跟进！",
+    valueModifier: 1.25,
+    heatModifier: 3,
+    duration: "instant",
+  },
+  {
+    type: "negativeNews",
+    title: "负面新闻",
+    description: "作品委托人卷入法律纠纷，作品来源历史受到审查！",
+    valueModifier: 0.75,
+    heatModifier: -1,
+    duration: "instant",
+  },
+];
+
+export function generateMarketEvent(targetArtist?: string, targetMovement?: string): MarketEvent | null {
+  if (Math.random() > 0.45) return null;
+  const template = MARKET_EVENT_TEMPLATES[Math.floor(Math.random() * MARKET_EVENT_TEMPLATES.length)];
+  return {
+    ...template,
+    id: `event-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    targetArtist: template.type === "artistSurge" ? targetArtist : undefined,
+    targetMovement: template.type === "styleTrend" ? targetMovement : undefined,
+  };
 }

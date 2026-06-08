@@ -14,6 +14,13 @@ import type {
   CuratorialEvaluation,
   TheftCase,
   TheftClueType,
+  AuctionPainting,
+  AuctionBidder,
+  MarketEvent,
+  BidRecord,
+  AuctionPhase,
+  PlayerCollectionItem,
+  AuctionSettlement,
 } from "@/data/paintings";
 import {
   getAllCampCombinations,
@@ -24,6 +31,9 @@ import {
   getPaintingsForCuratorTheme,
   evaluateCuratorialExhibition,
   pickRandomTheftCase,
+  generateAuctionPaintings,
+  generateAuctionBidders,
+  generateMarketEvent,
 } from "@/data/paintings";
 import {
   pickRandomPainting,
@@ -35,12 +45,17 @@ import {
   pickRandomForgeryCase,
   calculateForgeryScore,
   calculateTheftScore,
+  getBidIncrement,
+  selectAIBidder,
+  calculateBidAmount,
+  calculatePaintingCurrentValue,
+  calculateAuctionSettlement,
 } from "@/utils/gameLogic";
 
 export type Confidence = "low" | "medium" | "high";
 export type CasePhase = "opening" | "briefing" | "investigating" | "answered";
 export type AppPage = "game" | "collection" | "graph";
-export type GameMode = "standard" | "evolution" | "forgery" | "confusionCamp" | "curator" | "theft";
+export type GameMode = "standard" | "evolution" | "forgery" | "confusionCamp" | "curator" | "theft" | "auction";
 
 export type TheftPhase = "briefing" | "investigating" | "selecting" | "report";
 
@@ -155,6 +170,33 @@ interface GameState {
   unlockTheftClue: (clueType: TheftClueType) => void;
   submitTheftVerdict: (versionId: string) => void;
   nextTheftCase: () => void;
+  // Art Auction Mode
+  auctionPhase: AuctionPhase;
+  auctionPaintings: AuctionPainting[];
+  auctionCurrentLotIndex: number;
+  auctionBidders: AuctionBidder[];
+  auctionCurrentBid: number;
+  auctionLastBidderId: string | null;
+  auctionBidHistory: BidRecord[];
+  auctionActiveEvents: MarketEvent[];
+  auctionRemainingEvents: MarketEvent[];
+  auctionPlayerBudget: number;
+  auctionInitialBudget: number;
+  auctionPlayerCollection: PlayerCollectionItem[];
+  auctionLotResults: { paintingId: string; finalPrice: number; winnerId: string | null; isPlayerWin: boolean }[];
+  auctionSettlement: AuctionSettlement | null;
+  auctionBidCount: number;
+  auctionLastAIBidTime: number;
+  startAuction: () => void;
+  setAuctionPhase: (phase: AuctionPhase) => void;
+  placePlayerBid: (amount: number) => void;
+  placeQuickBid: () => void;
+  passLot: () => void;
+  triggerAIBid: () => void;
+  triggerMarketEvent: () => void;
+  nextAuctionLot: () => void;
+  finalizeAuctionSettlement: () => void;
+  resetAuction: () => void;
   gameMode: GameMode;
   currentPainting: Painting | null;
   options: string[];
@@ -300,6 +342,22 @@ export const useGameStore = create<GameState>()(
       theftScoreDelta: 0,
       theftCasesCompleted: 0,
       theftRecentCaseIds: [],
+      auctionPhase: "intro",
+      auctionPaintings: [],
+      auctionCurrentLotIndex: 0,
+      auctionBidders: [],
+      auctionCurrentBid: 0,
+      auctionLastBidderId: null,
+      auctionBidHistory: [],
+      auctionActiveEvents: [],
+      auctionRemainingEvents: [],
+      auctionPlayerBudget: 50000000,
+      auctionInitialBudget: 50000000,
+      auctionPlayerCollection: [],
+      auctionLotResults: [],
+      auctionSettlement: null,
+      auctionBidCount: 0,
+      auctionLastAIBidTime: 0,
 
       setCasePhase: (phase: CasePhase) => set({ casePhase: phase }),
       setFocusedDetail: (index: number | null) => set({ focusedDetailIndex: index }),
@@ -946,6 +1004,234 @@ export const useGameStore = create<GameState>()(
 
       nextTheftCase: () => {
         get().startTheftCase();
+      },
+
+      setAuctionPhase: (phase: AuctionPhase) => set({ auctionPhase: phase }),
+
+      startAuction: () => {
+        const paintings = generateAuctionPaintings(6);
+        const bidders = generateAuctionBidders(4);
+        const firstPainting = paintings[0];
+        set({
+          auctionPaintings: paintings,
+          auctionBidders: bidders,
+          auctionCurrentLotIndex: 0,
+          auctionCurrentBid: firstPainting ? Math.round(firstPainting.lowEstimate * 0.7) : 0,
+          auctionLastBidderId: null,
+          auctionBidHistory: [],
+          auctionActiveEvents: [],
+          auctionRemainingEvents: [],
+          auctionPlayerBudget: 50000000,
+          auctionInitialBudget: 50000000,
+          auctionPlayerCollection: [],
+          auctionLotResults: [],
+          auctionSettlement: null,
+          auctionBidCount: 0,
+          auctionLastAIBidTime: Date.now(),
+          auctionPhase: "bidding",
+        });
+      },
+
+      placePlayerBid: (amount: number) => {
+        const state = get();
+        const currentPainting = state.auctionPaintings[state.auctionCurrentLotIndex];
+        if (!currentPainting) return;
+        if (state.auctionPlayerBudget < amount) return;
+        if (amount <= state.auctionCurrentBid) return;
+
+        const bidRecord: BidRecord = {
+          bidderId: "player",
+          bidderName: "您",
+          amount,
+          timestamp: Date.now(),
+          isPlayer: true,
+        };
+
+        set({
+          auctionCurrentBid: amount,
+          auctionLastBidderId: "player",
+          auctionBidHistory: [...state.auctionBidHistory, bidRecord],
+          auctionBidCount: state.auctionBidCount + 1,
+          auctionLastAIBidTime: Date.now(),
+        });
+      },
+
+      placeQuickBid: () => {
+        const state = get();
+        const increment = getBidIncrement(state.auctionCurrentBid);
+        const nextBid = state.auctionCurrentBid + increment;
+        get().placePlayerBid(nextBid);
+      },
+
+      passLot: () => {
+        const state = get();
+        const currentPainting = state.auctionPaintings[state.auctionCurrentLotIndex];
+        if (!currentPainting) return;
+
+        let winnerId = state.auctionLastBidderId;
+        let finalPrice = state.auctionCurrentBid;
+        let isPlayerWin = winnerId === "player";
+
+        if (winnerId && winnerId !== "player") {
+          const winner = state.auctionBidders.find((b) => b.id === winnerId);
+          if (winner) {
+            const newBidders = state.auctionBidders.map((b) =>
+              b.id === winnerId
+                ? { ...b, remainingBudget: b.remainingBudget - finalPrice, wonLots: [...b.wonLots, currentPainting.id] }
+                : b
+            );
+            set({ auctionBidders: newBidders });
+          }
+        }
+
+        if (isPlayerWin) {
+          const currentValue = calculatePaintingCurrentValue(currentPainting, finalPrice, 1);
+          const collectionItem: PlayerCollectionItem = {
+            auctionPaintingId: currentPainting.id,
+            paintingId: currentPainting.paintingId,
+            purchasePrice: finalPrice,
+            currentValue,
+            purchaseRound: state.auctionCurrentLotIndex,
+            isForgery: currentPainting.isActuallyForgery,
+            appreciationRate: currentPainting.estimatedAppreciationRate,
+          };
+          set({
+            auctionPlayerBudget: state.auctionPlayerBudget - finalPrice,
+            auctionPlayerCollection: [...state.auctionPlayerCollection, collectionItem],
+          });
+        }
+
+        const lotResult = {
+          paintingId: currentPainting.id,
+          finalPrice,
+          winnerId,
+          isPlayerWin,
+        };
+
+        set({
+          auctionLotResults: [...state.auctionLotResults, lotResult],
+          auctionPhase: "result",
+        });
+      },
+
+      triggerAIBid: () => {
+        const state = get();
+        const currentPainting = state.auctionPaintings[state.auctionCurrentLotIndex];
+        if (!currentPainting) return;
+        if (state.auctionPhase !== "bidding") return;
+
+        const selectedBidder = selectAIBidder(
+          state.auctionBidders,
+          currentPainting,
+          state.auctionCurrentBid,
+          state.auctionLastBidderId,
+          state.auctionActiveEvents,
+          state.auctionBidCount
+        );
+
+        if (!selectedBidder) return;
+
+        const bidAmount = calculateBidAmount(
+          selectedBidder,
+          currentPainting,
+          state.auctionCurrentBid,
+          state.auctionActiveEvents
+        );
+
+        if (bidAmount <= state.auctionCurrentBid) return;
+
+        const bidRecord: BidRecord = {
+          bidderId: selectedBidder.id,
+          bidderName: selectedBidder.name,
+          amount: bidAmount,
+          timestamp: Date.now(),
+          isPlayer: false,
+        };
+
+        set({
+          auctionCurrentBid: bidAmount,
+          auctionLastBidderId: selectedBidder.id,
+          auctionBidHistory: [...state.auctionBidHistory, bidRecord],
+          auctionBidCount: state.auctionBidCount + 1,
+          auctionLastAIBidTime: Date.now(),
+        });
+      },
+
+      triggerMarketEvent: () => {
+        const state = get();
+        const currentPainting = state.auctionPaintings[state.auctionCurrentLotIndex];
+        if (!currentPainting) return;
+
+        const event = generateMarketEvent(currentPainting.artist, currentPainting.movement);
+        if (!event) return;
+
+        set({
+          auctionActiveEvents: [...state.auctionActiveEvents, event],
+          auctionPhase: "marketEvent",
+        });
+
+        setTimeout(() => {
+          set({ auctionPhase: "bidding" });
+        }, 2500);
+      },
+
+      nextAuctionLot: () => {
+        const state = get();
+        const nextIndex = state.auctionCurrentLotIndex + 1;
+
+        if (nextIndex >= state.auctionPaintings.length) {
+          get().finalizeAuctionSettlement();
+          return;
+        }
+
+        const nextPainting = state.auctionPaintings[nextIndex];
+        const remainingEvents = state.auctionActiveEvents.filter((e) => e.duration === "remaining");
+
+        set({
+          auctionCurrentLotIndex: nextIndex,
+          auctionCurrentBid: nextPainting ? Math.round(nextPainting.lowEstimate * 0.7) : 0,
+          auctionLastBidderId: null,
+          auctionBidHistory: [],
+          auctionActiveEvents: remainingEvents,
+          auctionBidCount: 0,
+          auctionLastAIBidTime: Date.now(),
+          auctionPhase: "bidding",
+        });
+      },
+
+      finalizeAuctionSettlement: () => {
+        const state = get();
+        const settlement = calculateAuctionSettlement(
+          state.auctionInitialBudget,
+          state.auctionPlayerBudget,
+          state.auctionPlayerCollection,
+          state.auctionPaintings.length
+        );
+        set({
+          auctionSettlement: settlement,
+          auctionPhase: "settlement",
+        });
+      },
+
+      resetAuction: () => {
+        set({
+          auctionPhase: "intro",
+          auctionPaintings: [],
+          auctionCurrentLotIndex: 0,
+          auctionBidders: [],
+          auctionCurrentBid: 0,
+          auctionLastBidderId: null,
+          auctionBidHistory: [],
+          auctionActiveEvents: [],
+          auctionRemainingEvents: [],
+          auctionPlayerBudget: 50000000,
+          auctionInitialBudget: 50000000,
+          auctionPlayerCollection: [],
+          auctionLotResults: [],
+          auctionSettlement: null,
+          auctionBidCount: 0,
+          auctionLastAIBidTime: 0,
+        });
       },
     }),
     {

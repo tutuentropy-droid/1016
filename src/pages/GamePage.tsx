@@ -1,5 +1,5 @@
 import { useCallback, useEffect } from "react";
-import { Search, Volume2, VolumeX, BookOpen, Network, Gamepad2, TrendingUp, User, Gavel, Target, Palette } from "lucide-react";
+import { Search, Volume2, VolumeX, BookOpen, Network, Gamepad2, TrendingUp, User, Gavel, Target, Palette, Hammer } from "lucide-react";
 import ScoreBoard from "@/components/ScoreBoard";
 import PaintingCard from "@/components/PaintingCard";
 import OptionButton from "@/components/OptionButton";
@@ -19,6 +19,7 @@ import ForgeryPanel from "@/components/ForgeryPanel";
 import StyleConfusionCamp from "@/components/StyleConfusionCamp";
 import MuseumCuratorPanel from "@/components/MuseumCuratorPanel";
 import TheftPanel from "@/components/TheftPanel";
+import AuctionPanel from "@/components/AuctionPanel";
 import { useGameStore, type AppPage, type GameMode } from "@/store/useGameStore";
 import { audioManager } from "@/utils/audioManager";
 import { useState } from "react";
@@ -36,6 +37,7 @@ const MODE_ITEMS: { id: GameMode; label: string; en: string; icon: typeof Gamepa
   { id: "confusionCamp", label: "风格混淆训练营", en: "Style Confusion Camp", icon: Target, desc: "专家模式：分辨极易混淆的艺术家，掌握关键差异点" },
   { id: "curator", label: "博物馆策展", en: "Museum Curator", icon: Palette, desc: "审美表达：策划主题展览，布局作品，撰写策展说明" },
   { id: "theft", label: "失窃名画追踪", en: "Stolen Art Tracking", icon: Search, desc: "侦探模式：追查失窃名作，地图追踪·时间线推进·锁定真迹" },
+  { id: "auction", label: "艺术拍卖会", en: "Art Auction House", icon: Hammer, desc: "投资模式：有限预算竞拍，AI对手抢拍，市场事件影响价值" },
 ];
 
 function GameContent() {
@@ -61,6 +63,11 @@ function GameContent() {
     theftCurrentCase,
     theftPhase,
     theftCasesCompleted,
+    resetAuction,
+    auctionPhase,
+    auctionCurrentLotIndex,
+    auctionPaintings,
+    auctionSettlement,
   } = useGameStore();
   const [soundEnabled, setSoundEnabled] = useState(true);
 
@@ -112,6 +119,9 @@ function GameContent() {
     }
     if (mode === "theft") {
       startTheftCase();
+    }
+    if (mode === "auction") {
+      resetAuction();
     }
   };
 
@@ -297,6 +307,10 @@ function GameContent() {
           <div className="max-w-5xl mx-auto">
             <TheftPanel />
           </div>
+        ) : gameMode === "auction" ? (
+          <div className="max-w-6xl mx-auto">
+            <AuctionPanel />
+          </div>
         ) : (
           <div className="max-w-5xl mx-auto">
             <ForgeryPanel />
@@ -316,6 +330,10 @@ function GameContent() {
               ? `— Museum Curator · Exhibition Planning —`
               : gameMode === "theft"
               ? `— Stolen Art Tracking · Case #${theftCurrentCase?.id.toUpperCase() || "000"} · ${theftPhase.toUpperCase()} · Solved: ${theftCasesCompleted} —`
+              : gameMode === "auction"
+              ? auctionSettlement
+                ? `— Art Auction · Final Settlement · ROI: ${(auctionSettlement.returnRate * 100).toFixed(1)}% —`
+                : `— Art Auction · Lot ${auctionCurrentLotIndex + 1}/${auctionPaintings.length} · ${auctionPhase.toUpperCase()} —`
               : `— Forgery Investigation · Case #${forgeryCurrentCase?.id.toUpperCase() || "000"} · Active —`}
           </p>
         </footer>
