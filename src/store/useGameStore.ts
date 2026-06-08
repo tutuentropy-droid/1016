@@ -10,12 +10,17 @@ import type {
   ConfusionCampQuestion,
   ConfusionCampAnswer,
   StyleIdentificationReport,
+  CuratorialTheme,
+  CuratorialEvaluation,
 } from "@/data/paintings";
 import {
   getAllCampCombinations,
   generateCampQuestions,
   generateWeaknessQuestions,
   analyzeMisjudgments,
+  getCuratorialThemeById,
+  getPaintingsForCuratorTheme,
+  evaluateCuratorialExhibition,
 } from "@/data/paintings";
 import {
   pickRandomPainting,
@@ -31,7 +36,18 @@ import {
 export type Confidence = "low" | "medium" | "high";
 export type CasePhase = "opening" | "briefing" | "investigating" | "answered";
 export type AppPage = "game" | "collection" | "graph";
-export type GameMode = "standard" | "evolution" | "forgery" | "confusionCamp";
+export type GameMode = "standard" | "evolution" | "forgery" | "confusionCamp" | "curator";
+
+export type CuratorPhase =
+  | "themeSelect"
+  | "curating"
+  | "evaluation";
+
+export interface CuratorExhibitionSlot {
+  id: string;
+  paintingId: string | null;
+}
+
 export type ConfusionCampPhase =
   | "selection"
   | "briefing"
@@ -105,6 +121,21 @@ interface GameState {
   finishCamp: () => void;
   resetCamp: () => void;
   setCampPhase: (phase: ConfusionCampPhase) => void;
+  curatorPhase: CuratorPhase;
+  curatorCurrentTheme: CuratorialTheme | null;
+  curatorAvailablePaintings: Painting[];
+  curatorExhibitionSlots: CuratorExhibitionSlot[];
+  curatorNarrativeText: string;
+  curatorEvaluation: CuratorialEvaluation | null;
+  curatorExhibitionsCompleted: number;
+  selectCuratorTheme: (themeId: string) => void;
+  placePaintingInSlot: (slotId: string, paintingId: string | null) => void;
+  movePaintingSlot: (fromSlotId: string, toSlotId: string) => void;
+  removePaintingFromSlot: (slotId: string) => void;
+  setCuratorNarrativeText: (text: string) => void;
+  submitCuratorExhibition: () => void;
+  resetCurator: () => void;
+  setCuratorPhase: (phase: CuratorPhase) => void;
   gameMode: GameMode;
   currentPainting: Painting | null;
   options: string[];
@@ -235,6 +266,13 @@ export const useGameStore = create<GameState>()(
       campWeaknessItemIds: [],
       campCampsCompleted: 0,
       campTotalScore: 0,
+      curatorPhase: "themeSelect",
+      curatorCurrentTheme: null,
+      curatorAvailablePaintings: [],
+      curatorExhibitionSlots: [],
+      curatorNarrativeText: "",
+      curatorEvaluation: null,
+      curatorExhibitionsCompleted: 0,
 
       setCasePhase: (phase: CasePhase) => set({ casePhase: phase }),
       setFocusedDetail: (index: number | null) => set({ focusedDetailIndex: index }),
@@ -716,6 +754,100 @@ export const useGameStore = create<GameState>()(
           campLastAnswerCorrect: null,
           campReport: null,
           campWeaknessItemIds: [],
+        });
+      },
+
+      setCuratorPhase: (phase: CuratorPhase) => set({ curatorPhase: phase }),
+
+      selectCuratorTheme: (themeId: string) => {
+        const theme = getCuratorialThemeById(themeId);
+        if (!theme) return;
+        const available = getPaintingsForCuratorTheme(theme);
+        const slots: CuratorExhibitionSlot[] = Array.from(
+          { length: theme.maxWorks },
+          (_, i) => ({
+            id: `slot-${i + 1}`,
+            paintingId: null,
+          })
+        );
+        set({
+          curatorCurrentTheme: theme,
+          curatorAvailablePaintings: available,
+          curatorExhibitionSlots: slots,
+          curatorNarrativeText: "",
+          curatorEvaluation: null,
+          curatorPhase: "curating",
+        });
+      },
+
+      placePaintingInSlot: (slotId: string, paintingId: string | null) => {
+        const { curatorExhibitionSlots } = get();
+        const newSlots = curatorExhibitionSlots.map((s) =>
+          s.id === slotId ? { ...s, paintingId } : s
+        );
+        set({ curatorExhibitionSlots: newSlots });
+      },
+
+      movePaintingSlot: (fromSlotId: string, toSlotId: string) => {
+        const { curatorExhibitionSlots } = get();
+        const fromSlot = curatorExhibitionSlots.find((s) => s.id === fromSlotId);
+        const toSlot = curatorExhibitionSlots.find((s) => s.id === toSlotId);
+        if (!fromSlot || !toSlot) return;
+        const fromPaintingId = fromSlot.paintingId;
+        const toPaintingId = toSlot.paintingId;
+        const newSlots = curatorExhibitionSlots.map((s) => {
+          if (s.id === fromSlotId) return { ...s, paintingId: toPaintingId };
+          if (s.id === toSlotId) return { ...s, paintingId: fromPaintingId };
+          return s;
+        });
+        set({ curatorExhibitionSlots: newSlots });
+      },
+
+      removePaintingFromSlot: (slotId: string) => {
+        const { curatorExhibitionSlots } = get();
+        const newSlots = curatorExhibitionSlots.map((s) =>
+          s.id === slotId ? { ...s, paintingId: null } : s
+        );
+        set({ curatorExhibitionSlots: newSlots });
+      },
+
+      setCuratorNarrativeText: (text: string) => set({ curatorNarrativeText: text }),
+
+      submitCuratorExhibition: () => {
+        const {
+          curatorCurrentTheme,
+          curatorExhibitionSlots,
+          curatorNarrativeText,
+          totalScore,
+        } = get();
+        if (!curatorCurrentTheme) return;
+        const selectedIds = curatorExhibitionSlots
+          .filter((s) => s.paintingId)
+          .map((s) => s.paintingId!) as string[];
+        if (selectedIds.length < curatorCurrentTheme.minWorks) return;
+
+        const evaluation = evaluateCuratorialExhibition(
+          curatorCurrentTheme,
+          selectedIds,
+          curatorNarrativeText
+        );
+
+        set({
+          curatorEvaluation: evaluation,
+          curatorPhase: "evaluation",
+          totalScore: Math.max(0, totalScore + evaluation.totalScore),
+          curatorExhibitionsCompleted: get().curatorExhibitionsCompleted + 1,
+        });
+      },
+
+      resetCurator: () => {
+        set({
+          curatorPhase: "themeSelect",
+          curatorCurrentTheme: null,
+          curatorAvailablePaintings: [],
+          curatorExhibitionSlots: [],
+          curatorNarrativeText: "",
+          curatorEvaluation: null,
         });
       },
     }),

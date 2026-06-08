@@ -1,5 +1,5 @@
 import { useCallback, useEffect } from "react";
-import { Search, Volume2, VolumeX, BookOpen, Network, Gamepad2, TrendingUp, User, Gavel, Target } from "lucide-react";
+import { Search, Volume2, VolumeX, BookOpen, Network, Gamepad2, TrendingUp, User, Gavel, Target, Palette } from "lucide-react";
 import ScoreBoard from "@/components/ScoreBoard";
 import PaintingCard from "@/components/PaintingCard";
 import OptionButton from "@/components/OptionButton";
@@ -17,6 +17,7 @@ import DailyTheme from "@/components/DailyTheme";
 import StyleEvolutionPanel from "@/components/StyleEvolutionPanel";
 import ForgeryPanel from "@/components/ForgeryPanel";
 import StyleConfusionCamp from "@/components/StyleConfusionCamp";
+import MuseumCuratorPanel from "@/components/MuseumCuratorPanel";
 import { useGameStore, type AppPage, type GameMode } from "@/store/useGameStore";
 import { audioManager } from "@/utils/audioManager";
 import { useState } from "react";
@@ -32,6 +33,7 @@ const MODE_ITEMS: { id: GameMode; label: string; en: string; icon: typeof Gamepa
   { id: "evolution", label: "风格进化追踪", en: "Style Evolution", icon: TrendingUp, desc: "进阶模式：理解同一艺术家不同阶段的风格演变" },
   { id: "forgery", label: "真假伪作鉴定", en: "Forgery Investigation", icon: Gavel, desc: "专家模式：紫外线、颜料分析、档案比对，判断真迹或伪作" },
   { id: "confusionCamp", label: "风格混淆训练营", en: "Style Confusion Camp", icon: Target, desc: "专家模式：分辨极易混淆的艺术家，掌握关键差异点" },
+  { id: "curator", label: "博物馆策展", en: "Museum Curator", icon: Palette, desc: "审美表达：策划主题展览，布局作品，撰写策展说明" },
 ];
 
 function GameContent() {
@@ -52,6 +54,7 @@ function GameContent() {
     resetCamp,
     campCurrentCombination,
     campPhase,
+    resetCurator,
   } = useGameStore();
   const [soundEnabled, setSoundEnabled] = useState(true);
 
@@ -94,6 +97,9 @@ function GameContent() {
     }
     if (mode === "confusionCamp") {
       resetCamp();
+    }
+    if (mode === "curator") {
+      resetCurator();
     }
   };
 
@@ -271,6 +277,10 @@ function GameContent() {
           <div className="max-w-5xl mx-auto">
             <StyleConfusionCamp />
           </div>
+        ) : gameMode === "curator" ? (
+          <div className="max-w-6xl mx-auto">
+            <MuseumCuratorPanel />
+          </div>
         ) : (
           <div className="max-w-5xl mx-auto">
             <ForgeryPanel />
@@ -286,6 +296,8 @@ function GameContent() {
               ? `— Style Evolution · ${evolutionArtist || "Investigating"} —`
               : gameMode === "confusionCamp"
               ? `— Style Camp · ${campCurrentCombination ? campCurrentCombination.titleEn : "Select Mode"} · ${campPhase.toUpperCase()} —`
+              : gameMode === "curator"
+              ? `— Museum Curator · Exhibition Planning —`
               : `— Forgery Investigation · Case #${forgeryCurrentCase?.id.toUpperCase() || "000"} · Active —`}
           </p>
         </footer>

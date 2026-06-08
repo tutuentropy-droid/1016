@@ -2269,3 +2269,321 @@ export function getAllCampCombinations(): ConfusionCampCombination[] {
 export function getCampCombinationById(id: string): ConfusionCampCombination | undefined {
   return confusionCampCombinations.find((c) => c.id === id);
 }
+
+export type CuratorialTag =
+  | "light"
+  | "color"
+  | "loneliness"
+  | "paris"
+  | "revolution"
+  | "nature"
+  | "portrait"
+  | "religion"
+  | "dream"
+  | "love"
+  | "suffering"
+  | "golden"
+  | "geometric"
+  | "movement"
+  | "water"
+  | "night"
+  | "warmth"
+  | "melancholy";
+
+export const CURATORIAL_TAG_LABELS: Record<CuratorialTag, string> = {
+  light: "光影",
+  color: "色彩",
+  loneliness: "孤独",
+  paris: "巴黎",
+  revolution: "艺术革命",
+  nature: "自然",
+  portrait: "肖像",
+  religion: "宗教",
+  dream: "梦境",
+  love: "爱情",
+  suffering: "苦难",
+  golden: "金色",
+  geometric: "几何",
+  movement: "动势",
+  water: "水",
+  night: "夜晚",
+  warmth: "温暖",
+  melancholy: "忧郁",
+};
+
+export interface CuratorialTheme {
+  id: string;
+  title: string;
+  titleEn: string;
+  description: string;
+  requiredTags: CuratorialTag[];
+  recommendedTags: CuratorialTag[];
+  minWorks: number;
+  maxWorks: number;
+  difficulty: "easy" | "normal" | "hard";
+  icon: string;
+  narrativeHint: string;
+}
+
+export const CURATORIAL_THEMES: CuratorialTheme[] = [
+  {
+    id: "light-and-color",
+    title: "光与颜色",
+    titleEn: "Light and Color",
+    description: "探索印象派与后印象派大师如何捕捉光线的瞬息万变，用色彩奏响视觉交响。",
+    requiredTags: ["light", "color"],
+    recommendedTags: ["nature", "water", "movement", "warmth"],
+    minWorks: 3,
+    maxWorks: 6,
+    difficulty: "easy",
+    icon: "🌅",
+    narrativeHint: "从日出到日落，从薄雾到晴空，讲述一场关于光的旅行。",
+  },
+  {
+    id: "lonely-painter",
+    title: "孤独的画家",
+    titleEn: "The Lonely Painter",
+    description: "审视艺术家内心深处的孤独与挣扎，那些在隔绝中绽放的天才之火。",
+    requiredTags: ["loneliness", "suffering"],
+    recommendedTags: ["melancholy", "night", "portrait"],
+    minWorks: 3,
+    maxWorks: 5,
+    difficulty: "normal",
+    icon: "🌙",
+    narrativeHint: "每一幅画都是一封写给世界的独白信。",
+  },
+  {
+    id: "paris-revolution",
+    title: "巴黎艺术革命",
+    titleEn: "Paris Art Revolution",
+    description: "19世纪巴黎如何成为现代艺术的摇篮，从印象派到立体主义的浪潮迭起。",
+    requiredTags: ["paris", "revolution"],
+    recommendedTags: ["color", "geometric", "movement"],
+    minWorks: 4,
+    maxWorks: 7,
+    difficulty: "hard",
+    icon: "🗼",
+    narrativeHint: "蒙马特的咖啡馆里，一场改变艺术史的革命正在酝酿。",
+  },
+  {
+    id: "dreams-and-mystery",
+    title: "梦境与神秘",
+    titleEn: "Dreams and Mystery",
+    description: "潜入超现实主义与象征主义的潜意识世界，探寻理性之外的真实。",
+    requiredTags: ["dream"],
+    recommendedTags: ["night", "melancholy", "love", "geometric"],
+    minWorks: 3,
+    maxWorks: 6,
+    difficulty: "normal",
+    icon: "🌌",
+    narrativeHint: "当沉睡的意识苏醒，画布成为通往另一个世界的入口。",
+  },
+  {
+    id: "golden-era",
+    title: "金色时代",
+    titleEn: "The Golden Era",
+    description: "从文艺复兴到荷兰黄金时代，重温那些人类艺术的辉煌巅峰。",
+    requiredTags: ["golden"],
+    recommendedTags: ["portrait", "religion", "love"],
+    minWorks: 3,
+    maxWorks: 5,
+    difficulty: "normal",
+    icon: "👑",
+    narrativeHint: "在金辉与光影交织中，感受那些永恒的艺术瞬间。",
+  },
+  {
+    id: "love-and-tenderness",
+    title: "爱与柔情",
+    titleEn: "Love and Tenderness",
+    description: "从恋人的拥吻到母子的凝视，艺术中最温柔动人的情感表达。",
+    requiredTags: ["love"],
+    recommendedTags: ["warmth", "portrait", "golden", "nature"],
+    minWorks: 3,
+    maxWorks: 6,
+    difficulty: "easy",
+    icon: "💝",
+    narrativeHint: "画笔无法描绘爱，却能记录爱存在过的每一个瞬间。",
+  },
+];
+
+export const PAINTING_CURATORIAL_TAGS: Record<string, CuratorialTag[]> = {
+  "1": ["night", "color", "movement", "light", "loneliness", "dream", "melancholy"],
+  "2": ["portrait", "golden", "love", "dream"],
+  "3": ["light", "color", "water", "paris", "revolution", "nature", "movement"],
+  "4": ["suffering", "geometric", "revolution", "paris", "movement"],
+  "5": ["portrait", "golden", "love", "light", "melancholy"],
+  "6": ["dream", "melancholy", "geometric", "night"],
+  "7": ["love", "golden", "warmth", "geometric", "portrait"],
+  "8": ["religion", "golden", "movement"],
+  "9": ["suffering", "loneliness", "melancholy", "night", "dream", "movement"],
+  "10": ["golden", "portrait", "movement", "light"],
+  "11": ["water", "light", "color", "nature", "movement"],
+};
+
+export interface CuratorialEvaluation {
+  totalScore: number;
+  themeMatchScore: number;
+  diversityScore: number;
+  narrativeFlowScore: number;
+  styleAnalysis: string[];
+  strengths: string[];
+  improvements: string[];
+  rank: "bronze" | "silver" | "gold" | "master";
+  rankTitle: string;
+  comment: string;
+}
+
+export function getAllCuratorialThemes(): CuratorialTheme[] {
+  return [...CURATORIAL_THEMES];
+}
+
+export function getCuratorialThemeById(id: string): CuratorialTheme | undefined {
+  return CURATORIAL_THEMES.find((t) => t.id === id);
+}
+
+export function getPaintingsForCuratorTheme(
+  theme: CuratorialTheme,
+  excludeIds: string[] = []
+): Painting[] {
+  const relevantTags = [...theme.requiredTags, ...theme.recommendedTags];
+  return paintings
+    .filter((p) => {
+      if (excludeIds.includes(p.id)) return false;
+      const tags = PAINTING_CURATORIAL_TAGS[p.id] || [];
+      return tags.some((t) => relevantTags.includes(t));
+    })
+    .sort((a, b) => {
+      const aTags = PAINTING_CURATORIAL_TAGS[a.id] || [];
+      const bTags = PAINTING_CURATORIAL_TAGS[b.id] || [];
+      const aScore = aTags.filter((t) => relevantTags.includes(t)).length;
+      const bScore = bTags.filter((t) => relevantTags.includes(t)).length;
+      return bScore - aScore;
+    });
+}
+
+export function evaluateCuratorialExhibition(
+  theme: CuratorialTheme,
+  selectedPaintingIds: string[],
+  narrativeText: string
+): CuratorialEvaluation {
+  const selectedPaintings = selectedPaintingIds
+    .map((id) => paintings.find((p) => p.id === id))
+    .filter(Boolean) as Painting[];
+
+  let themeMatchScore = 0;
+  const matchedRequired = new Set<CuratorialTag>();
+  const matchedRecommended = new Set<CuratorialTag>();
+
+  selectedPaintings.forEach((painting) => {
+    const tags = PAINTING_CURATORIAL_TAGS[painting.id] || [];
+    theme.requiredTags.forEach((t) => {
+      if (tags.includes(t)) matchedRequired.add(t);
+    });
+    theme.recommendedTags.forEach((t) => {
+      if (tags.includes(t)) matchedRecommended.add(t);
+    });
+  });
+
+  themeMatchScore = Math.round(
+    (matchedRequired.size / theme.requiredTags.length) * 60 +
+      (matchedRecommended.size / Math.max(theme.recommendedTags.length, 1)) * 25
+  );
+
+  const movements = new Set(selectedPaintings.map((p) => p.movement));
+  const artists = new Set(selectedPaintings.map((p) => p.artist));
+  const decades = new Set(selectedPaintings.map((p) => p.decade));
+  const diversityScore = Math.round(
+    (Math.min(movements.size, 4) / 4) * 30 +
+      (Math.min(artists.size, 5) / 5) * 35 +
+      (Math.min(decades.size, 4) / 4) * 35
+  );
+
+  let narrativeFlowScore = 15;
+  if (narrativeText.trim().length > 20) narrativeFlowScore += 15;
+  if (narrativeText.trim().length > 60) narrativeFlowScore += 15;
+  if (narrativeText.trim().length > 120) narrativeFlowScore += 15;
+  narrativeFlowScore = Math.min(narrativeFlowScore, 60);
+
+  if (selectedPaintings.length >= theme.minWorks) narrativeFlowScore += 10;
+  if (selectedPaintings.length >= theme.minWorks + 1) narrativeFlowScore += 10;
+
+  const totalScore = Math.round(
+    themeMatchScore * 0.45 + diversityScore * 0.3 + narrativeFlowScore * 0.25
+  );
+
+  const styleAnalysis: string[] = [];
+  const strengths: string[] = [];
+  const improvements: string[] = [];
+
+  if (movements.size >= 3) {
+    strengths.push(`跨越 ${movements.size} 个艺术流派，展现了开阔的艺术视野`);
+    styleAnalysis.push(
+      `展览涵盖 ${Array.from(movements).join("、")} 等多种风格，形成了丰富的风格对话`
+    );
+  } else {
+    improvements.push("可以尝试选择更多不同艺术流派的作品，增加风格多样性");
+  }
+
+  if (artists.size >= 3) {
+    strengths.push(`汇集 ${artists.size} 位艺术家的作品，策展选择丰富多元`);
+  } else {
+    improvements.push("尝试引入更多不同艺术家的作品，让策展视角更丰富");
+  }
+
+  if (matchedRequired.size === theme.requiredTags.length) {
+    strengths.push("完美契合主题的所有核心要素");
+  } else if (matchedRequired.size >= theme.requiredTags.length * 0.5) {
+    strengths.push("较好地把握了主题的核心精神");
+  } else {
+    improvements.push(`部分核心主题标签尚未覆盖，建议增加与主题更直接相关的作品`);
+  }
+
+  if (matchedRecommended.size >= theme.recommendedTags.length * 0.6) {
+    strengths.push("成功融入了多个推荐主题元素，展览层次丰富");
+  }
+
+  if (selectedPaintings.length >= theme.minWorks + 1) {
+    strengths.push(`展出 ${selectedPaintings.length} 幅作品，体量充足`);
+  }
+
+  if (narrativeText.trim().length > 80) {
+    strengths.push("策展说明详尽，叙事性强");
+  } else if (narrativeText.trim().length > 0) {
+    improvements.push("策展说明可以更详尽一些，讲述展览背后的故事");
+  } else {
+    improvements.push("别忘了为你的展览撰写一段策展说明");
+  }
+
+  let rank: CuratorialEvaluation["rank"] = "bronze";
+  let rankTitle = "新晋策展人";
+  if (totalScore >= 90) {
+    rank = "master";
+    rankTitle = "策展大师";
+  } else if (totalScore >= 75) {
+    rank = "gold";
+    rankTitle = "金牌策展人";
+  } else if (totalScore >= 55) {
+    rank = "silver";
+    rankTitle = "银牌策展人";
+  }
+
+  const comments: Record<CuratorialEvaluation["rank"], string> = {
+    bronze: "作为策展新人，你已经迈出了重要的第一步。继续探索艺术的世界，你的策展眼光会越来越独特。",
+    silver: "不错的策展尝试！你已经掌握了基本的策展逻辑，在主题契合和作品选择上展现了良好的感觉。",
+    gold: "出色的策展！你的展览兼具主题深度与视觉丰富度，展现了成熟的艺术判断力和叙事能力。",
+    master: "大师级的策展！这场展览堪称专业水准，主题表达精准、作品搭配精妙、叙事引人入胜。你就是天生的策展人！",
+  };
+
+  return {
+    totalScore,
+    themeMatchScore,
+    diversityScore,
+    narrativeFlowScore,
+    styleAnalysis,
+    strengths,
+    improvements,
+    rank,
+    rankTitle,
+    comment: comments[rank],
+  };
+}
