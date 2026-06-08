@@ -12,6 +12,8 @@ import type {
   StyleIdentificationReport,
   CuratorialTheme,
   CuratorialEvaluation,
+  TheftCase,
+  TheftClueType,
 } from "@/data/paintings";
 import {
   getAllCampCombinations,
@@ -21,6 +23,7 @@ import {
   getCuratorialThemeById,
   getPaintingsForCuratorTheme,
   evaluateCuratorialExhibition,
+  pickRandomTheftCase,
 } from "@/data/paintings";
 import {
   pickRandomPainting,
@@ -31,12 +34,15 @@ import {
   calculateEvolutionScore,
   pickRandomForgeryCase,
   calculateForgeryScore,
+  calculateTheftScore,
 } from "@/utils/gameLogic";
 
 export type Confidence = "low" | "medium" | "high";
 export type CasePhase = "opening" | "briefing" | "investigating" | "answered";
 export type AppPage = "game" | "collection" | "graph";
-export type GameMode = "standard" | "evolution" | "forgery" | "confusionCamp" | "curator";
+export type GameMode = "standard" | "evolution" | "forgery" | "confusionCamp" | "curator" | "theft";
+
+export type TheftPhase = "briefing" | "investigating" | "selecting" | "report";
 
 export type CuratorPhase =
   | "themeSelect"
@@ -136,6 +142,19 @@ interface GameState {
   submitCuratorExhibition: () => void;
   resetCurator: () => void;
   setCuratorPhase: (phase: CuratorPhase) => void;
+  theftPhase: TheftPhase;
+  theftCurrentCase: TheftCase | null;
+  theftUnlockedClues: TheftClueType[];
+  theftSelectedVersionId: string | null;
+  theftCaseCorrect: boolean | null;
+  theftScoreDelta: number;
+  theftCasesCompleted: number;
+  theftRecentCaseIds: string[];
+  startTheftCase: () => void;
+  setTheftPhase: (phase: TheftPhase) => void;
+  unlockTheftClue: (clueType: TheftClueType) => void;
+  submitTheftVerdict: (versionId: string) => void;
+  nextTheftCase: () => void;
   gameMode: GameMode;
   currentPainting: Painting | null;
   options: string[];
@@ -273,6 +292,14 @@ export const useGameStore = create<GameState>()(
       curatorNarrativeText: "",
       curatorEvaluation: null,
       curatorExhibitionsCompleted: 0,
+      theftPhase: "briefing",
+      theftCurrentCase: null,
+      theftUnlockedClues: [],
+      theftSelectedVersionId: null,
+      theftCaseCorrect: null,
+      theftScoreDelta: 0,
+      theftCasesCompleted: 0,
+      theftRecentCaseIds: [],
 
       setCasePhase: (phase: CasePhase) => set({ casePhase: phase }),
       setFocusedDetail: (index: number | null) => set({ focusedDetailIndex: index }),
@@ -849,6 +876,76 @@ export const useGameStore = create<GameState>()(
           curatorNarrativeText: "",
           curatorEvaluation: null,
         });
+      },
+
+      setTheftPhase: (phase: TheftPhase) => set({ theftPhase: phase }),
+
+      startTheftCase: () => {
+        const { theftRecentCaseIds } = get();
+        const theftCase = pickRandomTheftCase(theftRecentCaseIds);
+        if (!theftCase) return;
+        const newRecent = [...theftRecentCaseIds, theftCase.id].slice(-3);
+        set({
+          theftCurrentCase: theftCase,
+          theftPhase: "briefing",
+          theftUnlockedClues: [],
+          theftSelectedVersionId: null,
+          theftCaseCorrect: null,
+          theftScoreDelta: 0,
+          theftRecentCaseIds: newRecent,
+        });
+      },
+
+      unlockTheftClue: (clueType: TheftClueType) => {
+        const { theftUnlockedClues, theftPhase } = get();
+        if (theftPhase === "report") return;
+        if (theftUnlockedClues.includes(clueType)) return;
+        set({ theftUnlockedClues: [...theftUnlockedClues, clueType] });
+      },
+
+      submitTheftVerdict: (versionId: string) => {
+        const {
+          theftCurrentCase,
+          theftUnlockedClues,
+          totalScore,
+          streak,
+          bestStreak,
+          unlockedPaintingIds,
+        } = get();
+        if (!theftCurrentCase) return;
+
+        const selectedVersion = theftCurrentCase.suspectedVersions.find((v) => v.id === versionId);
+        const isCorrect = selectedVersion?.isAuthentic ?? false;
+
+        const { delta, bonus } = calculateTheftScore(
+          theftUnlockedClues.length,
+          theftCurrentCase.clues.length,
+          isCorrect,
+          theftCurrentCase.difficulty
+        );
+        const scoreDelta = delta + bonus;
+
+        const newStreak = isCorrect ? streak + 1 : 0;
+        const newBestStreak = Math.max(bestStreak, newStreak);
+        const newUnlocked = !unlockedPaintingIds.includes(theftCurrentCase.stolenPaintingId)
+          ? [...unlockedPaintingIds, theftCurrentCase.stolenPaintingId]
+          : unlockedPaintingIds;
+
+        set({
+          theftSelectedVersionId: versionId,
+          theftCaseCorrect: isCorrect,
+          theftScoreDelta: scoreDelta,
+          theftPhase: "report",
+          totalScore: Math.max(0, totalScore + scoreDelta),
+          streak: newStreak,
+          bestStreak: newBestStreak,
+          theftCasesCompleted: get().theftCasesCompleted + 1,
+          unlockedPaintingIds: newUnlocked,
+        });
+      },
+
+      nextTheftCase: () => {
+        get().startTheftCase();
       },
     }),
     {

@@ -2587,3 +2587,344 @@ export function evaluateCuratorialExhibition(
     comment: comments[rank],
   };
 }
+
+export type TheftClueType =
+  | "witnessReport"
+  | "auctionRecord"
+  | "partialPhoto"
+  | "styleFeature"
+  | "mapTracking"
+  | "timelineRecord";
+
+export interface TheftClue {
+  type: TheftClueType;
+  label: string;
+  labelEn: string;
+  cost: number;
+  content: string;
+  hintText: string;
+}
+
+export interface SuspectedVersion {
+  id: string;
+  paintingId: string;
+  title: string;
+  source: string;
+  owner: string;
+  location: string;
+  isAuthentic: boolean;
+  distinguishingFeatures: string[];
+}
+
+export interface TheftMapLocation {
+  id: string;
+  name: string;
+  description: string;
+  latitude: number;
+  longitude: number;
+  order: number;
+}
+
+export interface TheftTimelineEvent {
+  id: string;
+  date: string;
+  title: string;
+  description: string;
+  locationId: string;
+}
+
+export interface TheftCaseReport {
+  summary: string;
+  evidenceForVerdict: { title: string; content: string }[];
+  misleadingFeatures: { feature: string; explanation: string }[];
+  artHistoryContext: string;
+}
+
+export interface TheftCase {
+  id: string;
+  caseTitle: string;
+  caseTitleEn: string;
+  stolenPaintingId: string;
+  caseBriefing: string;
+  difficulty: "normal" | "hard" | "expert";
+  suspectedVersions: SuspectedVersion[];
+  clues: TheftClue[];
+  mapLocations: TheftMapLocation[];
+  timelineEvents: TheftTimelineEvent[];
+  report: TheftCaseReport;
+}
+
+export const theftCases: TheftCase[] = [
+  {
+    id: "theft-1",
+    caseTitle: "蒙克《呐喊》失窃追踪",
+    caseTitleEn: "The Scream Theft Investigation",
+    stolenPaintingId: "9",
+    caseBriefing: "1994年2月，挪威奥斯陆国家美术馆的爱德华·蒙克名作《呐喊》在利勒哈默尔冬奥会开幕当天被盗。盗贼留下一张纸条：\"感谢可怜的安保\"。警方在欧洲各地发现了多个疑似版本，你需要通过目击记录、拍卖信息、局部照片和风格特征，锁定真正的原作。",
+    difficulty: "normal",
+    suspectedVersions: [
+      {
+        id: "ver-1",
+        paintingId: "9",
+        title: "奥斯陆版《呐喊》",
+        source: "私人收藏家匿名提供",
+        owner: "神秘瑞士收藏家",
+        location: "日内瓦私人画廊",
+        isAuthentic: false,
+        distinguishingFeatures: [
+          "背景中两个人影的比例略大",
+          "血红色天空的笔触过于均匀",
+          "右下角签名的墨水颜色偏深"
+        ]
+      },
+      {
+        id: "ver-2",
+        paintingId: "9",
+        title: "伦敦版《呐喊》",
+        source: "苏富比拍卖行待拍品",
+        owner: "英国贵族遗产",
+        location: "伦敦苏富比库房",
+        isAuthentic: false,
+        distinguishingFeatures: [
+          "人物嘴部张开角度更大",
+          "蓝色峡湾的色调偏紫",
+          "左侧栏杆有细微裂纹，真迹无此特征"
+        ]
+      },
+      {
+        id: "ver-3",
+        paintingId: "9",
+        title: "奥斯陆寻回版《呐喊》",
+        source: "警方突袭行动缴获",
+        owner: "奥斯陆国家美术馆（原主）",
+        location: "挪威奥斯陆郊外旅馆",
+        isAuthentic: true,
+        distinguishingFeatures: [
+          "画面右上角有蒙克创作时刻意留下的指甲划痕",
+          "背面有蒙克手写的诗歌草稿",
+          "血红色天空中橙红色颜料层下有底层蓝色透出的独特效果"
+        ]
+      }
+    ],
+    clues: [
+      {
+        type: "witnessReport",
+        label: "目击记录",
+        labelEn: "Witness Report",
+        cost: 10,
+        content: "旅馆前台服务员证词：\"1994年3月，两名操挪威口音的男子入住，携带一个用棕色防水布包裹的大画框，声称是古董家具。他们只住了一晚，第二天清晨匆匆退房，留下了2000挪威克朗现金。房间在三楼，可以看到峡湾。\"",
+        hintText: "调取案发前后的目击证人陈述"
+      },
+      {
+        type: "auctionRecord",
+        label: "拍卖信息",
+        labelEn: "Auction Record",
+        cost: 15,
+        content: "苏富比拍卖行机密记录：编号 LOT-7749 的《呐喊》由某英国贵族遗产送拍，声称是1930年代购入。但查证档案显示，该贵族家族1930年代的藏品清册中并无此画。估价7000万美元的此画在拍卖前48小时被神秘撤拍。",
+        hintText: "查阅国际艺术品拍卖与交易记录"
+      },
+      {
+        type: "partialPhoto",
+        label: "局部照片比对",
+        labelEn: "Partial Photo Comparison",
+        cost: 20,
+        content: "技术鉴定报告：通过对警方缴获版本的超高清扫描，发现画面右上角云层处有一处极细微的指甲划痕，与奥斯陆国家美术馆1990年的文物档案照片完全吻合。该划痕是蒙克创作时刻意用指甲刮出的，从未在任何复制品中出现。",
+        hintText: "放大比对画作的关键局部细节"
+      },
+      {
+        type: "styleFeature",
+        label: "风格特征分析",
+        labelEn: "Style Feature Analysis",
+        cost: 15,
+        content: "艺术史专家鉴定：警方缴获版本的血红色天空颜料层中，橙红色颜料层下透出独特的蓝色底层，这是蒙克典型的多层薄涂技法。伪作通常直接使用混合后的橙红色，缺少这种色彩层次感。另外，扭曲的线条节奏与蒙克同期作品（1893-1895年）的笔迹完全一致。",
+        hintText: "从笔触、色彩、构图等维度分析风格特征"
+      },
+      {
+        type: "mapTracking",
+        label: "地图追踪",
+        labelEn: "Map Tracking",
+        cost: 10,
+        content: "国际刑警组织追踪报告：盗贼从奥斯陆国家美术馆得手后，驾车沿E18号公路向东南方向逃窜，在瑞典边境的卡尔斯塔德短暂停留，随后经哥本哈根轮渡至丹麦，最后画作在挪威西海岸卑尔根附近的一家旅馆被寻回。运输路线与国际走私网络惯常路径吻合。",
+        hintText: "追踪画作可能经过的地理位置"
+      },
+      {
+        type: "timelineRecord",
+        label: "时间线推进",
+        labelEn: "Timeline Progress",
+        cost: 10,
+        content: "案件时间线还原：2月12日冬奥会开幕日凌晨4点（案发）→ 2月12日上午8点（保安发现画作失踪）→ 2月14日（收到第一封勒索信，索要100万美元赎金）→ 3月上旬（警方收到线报，画作可能在挪威境内）→ 5月7日（警方在奥斯陆郊外旅馆突袭，成功寻回画作，窃贼四人落网）。",
+        hintText: "梳理案件从发生到破获的关键时间节点"
+      }
+    ],
+    mapLocations: [
+      { id: "loc-1", name: "奥斯陆国家美术馆", description: "案发地点，盗贼从二楼窗户进入", latitude: 59.917, longitude: 10.731, order: 1 },
+      { id: "loc-2", name: "卡尔斯塔德（瑞典边境）", description: "盗贼逃窜途中短暂停留地", latitude: 59.390, longitude: 13.506, order: 2 },
+      { id: "loc-3", name: "哥本哈根轮渡码头", description: "疑似画作被转运至丹麦的地点", latitude: 55.676, longitude: 12.568, order: 3 },
+      { id: "loc-4", name: "奥斯陆郊外旅馆", description: "警方寻回画作的地点", latitude: 59.850, longitude: 10.500, order: 4 }
+    ],
+    timelineEvents: [
+      { id: "ev-1", date: "1994.02.12 04:00", title: "案发", description: "盗贼趁冬奥会开幕安保松懈，从二楼窗户进入国家美术馆，用时仅50秒盗走《呐喊》", locationId: "loc-1" },
+      { id: "ev-2", date: "1994.02.14", title: "勒索信", description: "画廊收到第一封勒索信，索要100万美元赎金，并附有画作照片作为证据", locationId: "loc-1" },
+      { id: "ev-3", date: "1994.02.25", title: "跨境逃窜", description: "情报显示盗贼可能已将画作转移至瑞典和丹麦", locationId: "loc-2" },
+      { id: "ev-4", date: "1994.05.07", title: "成功寻回", description: "挪威警方在奥斯陆郊外的一家旅馆发起突袭行动，成功寻回画作，四名窃贼落网", locationId: "loc-4" }
+    ],
+    report: {
+      summary: "1994年2月12日利勒哈默尔冬奥会开幕当天，挪威奥斯陆国家美术馆的爱德华·蒙克名作《呐喊》被盗。经过近三个月的跨国追踪，警方最终在奥斯陆郊外的一家旅馆成功寻回画作，四名窃贼被逮捕。此案是20世纪最著名的艺术品盗窃案之一，暴露了当时欧洲美术馆安保系统的严重漏洞。",
+      evidenceForVerdict: [
+        { title: "指甲划痕铁证", content: "警方缴获版本的画面右上角有一处极细微的指甲划痕，与1990年文物档案照片完全吻合，此为蒙克创作时刻意留下，从未在任何复制品中出现过。" },
+        { title: "颜料层分析", content: "血红色天空的多层薄涂技法——橙红色颜料层下透出独特的蓝色底层——是蒙克典型的创作手法，伪作无法完美复制。" },
+        { title: "背面手写草稿", content: "画作背面有蒙克手写的诗歌草稿，笔迹经过专家比对确认为蒙克真迹。" },
+        { title: "运输路线吻合", content: "画作的跨境运输路线与挪威-瑞典-丹麦走私网络惯常路径高度吻合，且缴获地点符合线人情报。" }
+      ],
+      misleadingFeatures: [
+        { feature: "伦敦苏富比版本的极高相似度", explanation: "该版本是1970年代的高质量复制品，由一名曾在国家美术馆工作的修复师临摹，欺骗了众多鉴定专家。但其背景中缺少真迹独有的指甲划痕。" },
+        { feature: "日内瓦版本的完美装裱", explanation: "瑞士收藏家手中的版本装裱极为考究，甚至使用了与真迹同期的古董画框，导致多人被误导。但颜料分析显示，其使用了20世纪60年代才发明的丙烯颜料。" }
+      ],
+      artHistoryContext: "爱德华·蒙克的《呐喊》（Skrik）创作于1893年，是表现主义的先驱之作。蒙克本人曾描述创作灵感：\"我和两个朋友一起走在路上，太阳开始落山。突然间，天空变得血红。我停下脚步，靠在栏杆上，疲惫不堪。我看到血和火焰悬挂在蓝黑色的峡湾和城市上空。我的朋友继续前行，而我站在那里，因焦虑而颤抖——我感觉到一声巨大的、无限的尖叫穿过自然。\" 蒙克一生创作了多个版本的《呐喊》，包括蛋彩画、蜡笔画和石版画，其中1893年蛋彩版本最为知名。这幅作品被视为现代人类焦虑与存在之苦的视觉象征。2012年，其中一个 pastel 版本在苏富比拍出近1.2亿美元的天价。"
+    }
+  },
+  {
+    id: "theft-2",
+    caseTitle: "维米尔《戴珍珠耳环的少女》追踪记",
+    caseTitleEn: "Girl with a Pearl Earring Theft",
+    stolenPaintingId: "5",
+    caseBriefing: "假设17世纪荷兰黄金时代大师约翰内斯·维米尔的名作《戴珍珠耳环的少女》在现代从荷兰海牙莫瑞泰斯皇家美术馆神秘失踪。警方追踪到了三幅出现在地下艺术品交易市场的疑似版本，每幅都有可信的来源故事。运用侦探技巧找出真正的\"北方蒙娜丽莎\"。",
+    difficulty: "hard",
+    suspectedVersions: [
+      {
+        id: "ver-a",
+        paintingId: "5",
+        title: "阿姆斯特丹地下市场版",
+        source: "黑市线人提供",
+        owner: "荷兰某商人",
+        location: "阿姆斯特丹运河屋地下室",
+        isAuthentic: false,
+        distinguishingFeatures: [
+          "少女嘴唇的红色过于鲜艳",
+          "蓝色头巾的群青色缺少颗粒感",
+          "珍珠耳环的高光形状为圆形，真迹为水滴形"
+        ]
+      },
+      {
+        id: "ver-b",
+        paintingId: "5",
+        title: "纽约收藏家版本",
+        source: "私人交易浮出水面",
+        owner: "美国对冲基金经理",
+        location: "纽约上东区公寓",
+        isAuthentic: false,
+        distinguishingFeatures: [
+          "少女回眸角度略偏左",
+          "背景画布的裂纹呈现规律性网格",
+          "衣领的黄色调偏柠檬黄而非赭黄"
+        ]
+      },
+      {
+        id: "ver-c",
+        paintingId: "5",
+        title: "鹿特丹港货柜查缴版",
+        source: "海关走私查扣",
+        owner: "海牙莫瑞泰斯皇家美术馆（原主）",
+        location: "鹿特丹港集装箱码头",
+        isAuthentic: true,
+        distinguishingFeatures: [
+          "珍珠耳环的高光为独特的水滴形，符合维米尔对光线的精密描绘",
+          "蓝色头巾使用了极其昂贵的天然群青（青金石制成），在放大镜下可见晶体颗粒",
+          "黑色背景中使用了维米尔标志性的\"画布之窗\"效果，在侧光下可见细微的层次渐变"
+        ]
+      }
+    ],
+    clues: [
+      {
+        type: "witnessReport",
+        label: "目击记录",
+        labelEn: "Witness Report",
+        cost: 10,
+        content: "夜班保安证词：\"案发当晚凌晨2点左右，我在监控室看到两个人影从员工通道进入。其中一人背着一个长条型帆布包。他们在展厅待了大约8分钟。我当时以为是夜间修复团队，因为他们穿着和修复师类似的白大褂。\"",
+        hintText: "调取案发前后的目击证人陈述"
+      },
+      {
+        type: "auctionRecord",
+        label: "拍卖信息",
+        labelEn: "Auction Record",
+        cost: 15,
+        content: "佳士得拍卖行情报：在过去十年中，《戴珍珠耳环的少女》从未在任何合法拍卖市场上出现过。然而，近期有一笔通过迪拜自由港进行的\"匿名艺术品抵押贷款\"浮出水面，抵押品估价达2.5亿美元，物品描述高度符合此画特征。贷款方为一家注册在英属维尔京群岛的壳公司。",
+        hintText: "查阅国际艺术品拍卖与交易记录"
+      },
+      {
+        type: "partialPhoto",
+        label: "局部照片比对",
+        labelEn: "Partial Photo Comparison",
+        cost: 20,
+        content: "超高清局部比对报告：对鹿特丹港查缴版本的珍珠耳环进行微观摄影后发现，耳环高光呈现出独特的水滴形（而非常见的圆形），这与维米尔对光线折射的精密理解完全一致。此细节从未在任何印刷品或复制品中被准确复制过，因为大多数临摹者只注意到耳环是白色，未注意到高光的确切形状。",
+        hintText: "放大比对画作的关键局部细节"
+      },
+      {
+        type: "styleFeature",
+        label: "风格特征分析",
+        labelEn: "Style Feature Analysis",
+        cost: 15,
+        content: "维米尔专家鉴定意见书：鹿特丹版本的蓝色头巾使用了极其昂贵的天然群青颜料（由阿富汗青金石研磨制成），在400倍放大镜下可见独特的晶体颗粒反光。这种颜料在17世纪比黄金还贵，维米尔因家境贫寒常赊账购买，只有最重要的作品才会使用。伪作几乎不可能使用真正的天然群青，通常会用 cheaper 的合成替代颜料。",
+        hintText: "从笔触、色彩、构图等维度分析风格特征"
+      },
+      {
+        type: "mapTracking",
+        label: "地图追踪",
+        labelEn: "Map Tracking",
+        cost: 10,
+        content: "GPS追踪还原：盗贼从海牙莫瑞泰斯美术馆得手后，驾驶一辆白色厢式货车沿A13号公路向南行驶，在代尔夫特（维米尔的故乡）停留约40分钟，随后继续前往鹿特丹港。情报显示，他们原本计划将画作装船运往伊斯坦布尔，再经陆路走私至中东，但因海关临时抽查而被迫放弃。",
+        hintText: "追踪画作可能经过的地理位置"
+      },
+      {
+        type: "timelineRecord",
+        label: "时间线推进",
+        labelEn: "Timeline Progress",
+        cost: 10,
+        content: "案件时间线：D-2（修复团队例行检查，画作状态良好）→ D日 01:47（监控捕捉到两人进入员工通道）→ D日 01:55（两人携带长条包裹离开）→ D日 06:30（开馆前例行检查发现画作失踪）→ D+3（国际刑警组织发出红色通报）→ D+12（鹿特丹港例行抽查中在标有\"新鲜农产品\"的货柜中发现画作）。",
+        hintText: "梳理案件从发生到破获的关键时间节点"
+      }
+    ],
+    mapLocations: [
+      { id: "tl-1", name: "海牙莫瑞泰斯皇家美术馆", description: "案发地点，维米尔名作的故乡", latitude: 52.080, longitude: 4.313, order: 1 },
+      { id: "tl-2", name: "代尔夫特老城", description: "维米尔出生和生活的城市，盗贼中途停留地", latitude: 52.012, longitude: 4.358, order: 2 },
+      { id: "tl-3", name: "鹿特丹港集装箱码头", description: "画作被海关查扣的地点", latitude: 51.944, longitude: 4.144, order: 3 }
+    ],
+    timelineEvents: [
+      { id: "te-1", date: "案发当日 01:47", title: "盗贼潜入", description: "两名身着白大褂伪装成修复师的男子从员工通道进入美术馆", locationId: "tl-1" },
+      { id: "te-2", date: "案发当日 01:55", title: "得手逃离", description: "盗贼携带装有画作的长条帆布包从原路离开，全程仅8分钟", locationId: "tl-1" },
+      { id: "te-3", date: "案发当日 03:20", title: "中途停留", description: "车辆在代尔夫特老城停留40分钟，疑似交接或短暂藏匿", locationId: "tl-2" },
+      { id: "te-4", date: "案发后第12天", title: "海关查扣", description: "鹿特丹港例行抽查中，在标有\"新鲜农产品\"的冷藏货柜中发现画作", locationId: "tl-3" }
+    ],
+    report: {
+      summary: "约翰内斯·维米尔的《戴珍珠耳环的少女》被誉为\"北方的蒙娜丽莎\"，是荷兰黄金时代最珍贵的肖像画之一。假设它在现代被盗，经过12天的跨国追踪，荷兰海关最终在鹿特丹港的一个冷藏集装箱中截获了这幅名画，当时它正准备被走私运往中东。画作完好无损。",
+      evidenceForVerdict: [
+        { title: "珍珠耳环的水滴形高光", content: "维米尔以光学精密性著称，他对耳环高光的描绘呈现出独特的水滴形（而非简单的白点），这是他亲自观察玻璃珍珠反光后精心绘制的，没有任何临摹者注意到这一细节。" },
+        { title: "天然群青颜料晶体", content: "蓝色头巾使用了17世纪比黄金还贵的天然群青，由阿富汗青金石研磨而成，显微镜下可见独特晶体颗粒。现代复制品均使用合成替代颜料，不具备此特征。" },
+        { title: "\"画布之窗\"效果", content: "维米尔的黑色背景并非纯黑，在侧光下可见细微的层次渐变，营造出一种\"窗户般\"的深邃空间感，这是他的标志性技法。" },
+        { title: "走私路径吻合", content: "海牙→代尔夫特→鹿特丹港的路线与艺术品走私网络的典型路径吻合，代尔夫特（维米尔故乡）的停留符合走私者\"朝圣\"心理或与当地接头人会面。" }
+      ],
+      misleadingFeatures: [
+        { feature: "纽约版本的完美外形", explanation: "美国收藏家手中的版本是20世纪初荷兰艺术伪造大师汉·范·米格伦（Han van Meegeren）流派的作品，伪造水平极高。但X射线分析显示其底层画布为20世纪产物。" },
+        { feature: "阿姆斯特丹版本的配套文献", explanation: "该版本附带了看似完美的伪造 provenance（来源历史）文件，包括18世纪的拍卖记录。但笔迹鉴定显示，所有文件均由同一人在30年前书写。" }
+      ],
+      artHistoryContext: "约翰内斯·维米尔（Johannes Vermeer, 1632-1675）是荷兰黄金时代最伟大的画家之一，一生仅创作了约35幅作品，但每幅都是精品。《戴珍珠耳环的少女》（Meisje met de parel）约作于1665年，被誉为\"北方的蒙娜丽莎\"。画中少女回眸的神秘姿态、蓝色头巾与柠檬黄衣领的色彩对比、尤其是那颗悬垂的珍珠耳环（其实可能只是一块抛光的锡箔或玻璃），使这幅画成为西方艺术史上最具标志性的肖像之一。维米尔以使用昂贵的天然群青（lapis lazuli）颜料著称，尽管他生前家境贫寒，常靠赊账购买颜料。他对光线的精密描绘令人叹为观止，艺术史家常推测他使用了暗箱（camera obscura）技术辅助观察。维米尔生前默默无闻，死后近200年才被重新发现，如今他的每一幅画都价值连城。"
+    }
+  }
+];
+
+export function getAllTheftCases(): TheftCase[] {
+  return [...theftCases];
+}
+
+export function getTheftCaseById(id: string): TheftCase | undefined {
+  return theftCases.find((c) => c.id === id);
+}
+
+export function pickRandomTheftCase(excludeIds: string[] = []): TheftCase | null {
+  const pool =
+    excludeIds.length >= theftCases.length
+      ? theftCases
+      : theftCases.filter((c) => !excludeIds.includes(c.id));
+  if (pool.length === 0) return null;
+  return pool[Math.floor(Math.random() * pool.length)];
+}

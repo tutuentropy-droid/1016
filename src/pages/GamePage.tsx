@@ -18,6 +18,7 @@ import StyleEvolutionPanel from "@/components/StyleEvolutionPanel";
 import ForgeryPanel from "@/components/ForgeryPanel";
 import StyleConfusionCamp from "@/components/StyleConfusionCamp";
 import MuseumCuratorPanel from "@/components/MuseumCuratorPanel";
+import TheftPanel from "@/components/TheftPanel";
 import { useGameStore, type AppPage, type GameMode } from "@/store/useGameStore";
 import { audioManager } from "@/utils/audioManager";
 import { useState } from "react";
@@ -34,6 +35,7 @@ const MODE_ITEMS: { id: GameMode; label: string; en: string; icon: typeof Gamepa
   { id: "forgery", label: "真假伪作鉴定", en: "Forgery Investigation", icon: Gavel, desc: "专家模式：紫外线、颜料分析、档案比对，判断真迹或伪作" },
   { id: "confusionCamp", label: "风格混淆训练营", en: "Style Confusion Camp", icon: Target, desc: "专家模式：分辨极易混淆的艺术家，掌握关键差异点" },
   { id: "curator", label: "博物馆策展", en: "Museum Curator", icon: Palette, desc: "审美表达：策划主题展览，布局作品，撰写策展说明" },
+  { id: "theft", label: "失窃名画追踪", en: "Stolen Art Tracking", icon: Search, desc: "侦探模式：追查失窃名作，地图追踪·时间线推进·锁定真迹" },
 ];
 
 function GameContent() {
@@ -55,6 +57,10 @@ function GameContent() {
     campCurrentCombination,
     campPhase,
     resetCurator,
+    startTheftCase,
+    theftCurrentCase,
+    theftPhase,
+    theftCasesCompleted,
   } = useGameStore();
   const [soundEnabled, setSoundEnabled] = useState(true);
 
@@ -84,7 +90,10 @@ function GameContent() {
     if (gameMode === "forgery" && !forgeryCurrentCase) {
       startForgeryCase();
     }
-  }, [gameMode, evolutionArtist, forgeryCurrentCase, startEvolutionCase, startForgeryCase]);
+    if (gameMode === "theft" && !theftCurrentCase) {
+      startTheftCase();
+    }
+  }, [gameMode, evolutionArtist, forgeryCurrentCase, theftCurrentCase, startEvolutionCase, startForgeryCase, startTheftCase]);
 
   const handleModeSwitch = (mode: GameMode) => {
     audioManager.play("paper_flip");
@@ -100,6 +109,9 @@ function GameContent() {
     }
     if (mode === "curator") {
       resetCurator();
+    }
+    if (mode === "theft") {
+      startTheftCase();
     }
   };
 
@@ -281,6 +293,10 @@ function GameContent() {
           <div className="max-w-6xl mx-auto">
             <MuseumCuratorPanel />
           </div>
+        ) : gameMode === "theft" ? (
+          <div className="max-w-5xl mx-auto">
+            <TheftPanel />
+          </div>
         ) : (
           <div className="max-w-5xl mx-auto">
             <ForgeryPanel />
@@ -298,6 +314,8 @@ function GameContent() {
               ? `— Style Camp · ${campCurrentCombination ? campCurrentCombination.titleEn : "Select Mode"} · ${campPhase.toUpperCase()} —`
               : gameMode === "curator"
               ? `— Museum Curator · Exhibition Planning —`
+              : gameMode === "theft"
+              ? `— Stolen Art Tracking · Case #${theftCurrentCase?.id.toUpperCase() || "000"} · ${theftPhase.toUpperCase()} · Solved: ${theftCasesCompleted} —`
               : `— Forgery Investigation · Case #${forgeryCurrentCase?.id.toUpperCase() || "000"} · Active —`}
           </p>
         </footer>

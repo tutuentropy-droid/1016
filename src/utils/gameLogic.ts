@@ -216,3 +216,30 @@ export function calculateForgeryScore(
 
   return { delta, bonus: noClueBonus + perfectBonus };
 }
+
+export function calculateTheftScore(
+  unlockedClues: number,
+  totalClues: number,
+  isCorrect: boolean,
+  difficulty: "normal" | "hard" | "expert"
+): { delta: number; bonus: number } {
+  const baseScore = 150;
+  const clueDeduction = unlockedClues * 12;
+  let delta = Math.max(40, baseScore - clueDeduction);
+
+  const difficultyMultiplier = {
+    normal: 1.0,
+    hard: 1.3,
+    expert: 1.6,
+  };
+  delta = Math.round(delta * difficultyMultiplier[difficulty]);
+
+  if (!isCorrect) {
+    delta = -Math.round(delta * 0.35);
+  }
+
+  const noClueBonus = isCorrect && unlockedClues === 0 ? 60 : 0;
+  const perfectBonus = isCorrect && unlockedClues <= 2 ? 30 : 0;
+
+  return { delta, bonus: noClueBonus + perfectBonus };
+}
