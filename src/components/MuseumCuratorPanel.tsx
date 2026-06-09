@@ -482,7 +482,7 @@ function PlacedPainting({
   return (
     <div
       ref={containerRef}
-      className="absolute artwork-drag-handle z-10"
+      className="group absolute artwork-drag-handle z-10"
       style={{
         left: `${artwork.positionX}%`,
         top: `${artwork.positionY}%`,
@@ -508,15 +508,20 @@ function PlacedPainting({
       <button
         onClick={(e) => {
           e.stopPropagation();
+          e.preventDefault();
           audioManager.play("detail_focus");
           onRemove(artwork.id);
         }}
-        className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-terracotta/90 text-white flex items-center justify-center shadow-lg hover:scale-110 transition-transform opacity-0 group-hover:opacity-100"
-        style={{ pointerEvents: "auto" }}
+        onMouseDown={(e) => {
+          e.stopPropagation();
+          e.preventDefault();
+        }}
+        className="absolute -top-3 -right-3 w-7 h-7 rounded-full bg-terracotta text-white flex items-center justify-center shadow-xl hover:scale-110 transition-all opacity-0 group-hover:opacity-100 hover:bg-terracotta/90"
+        style={{ pointerEvents: "auto", zIndex: 200 }}
       >
-        <X size={12} />
+        <X size={14} strokeWidth={2.5} />
       </button>
-      <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 whitespace-nowrap text-[9px] font-serif bg-black/70 text-white/80 px-2 py-0.5 rounded pointer-events-none opacity-0 hover:opacity-100 transition-opacity">
+      <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap text-[10px] font-serif bg-black/80 text-white/90 px-2.5 py-1 rounded pointer-events-none opacity-0 group-hover:opacity-100 transition-all">
         {painting.title} · {FRAME_STYLE_LABELS[frameStyle]}
       </div>
     </div>

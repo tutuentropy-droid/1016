@@ -3964,15 +3964,22 @@ export function calculatePaintingDisplayScale(
 ): { widthPct: number; heightPct: number } {
   const totalWidth = paintingSize.widthCm + paintingSize.frameWidthCm * 2;
   const totalHeight = paintingSize.heightCm + paintingSize.frameWidthCm * 2;
-  const wallLength = hall.displayWallLengthCm;
-  const maxDisplayHeight = hall.ceilingHeight * 0.6;
+  const aspectRatio = totalHeight / totalWidth;
 
-  const scaleByWidth = totalWidth / wallLength;
-  const scaleByHeight = totalHeight / maxDisplayHeight;
-  const scale = Math.min(scaleByWidth, scaleByHeight, 0.3);
+  const maxWidthPct = 32;
+  const maxHeightPct = 65;
 
-  return {
-    widthPct: Math.max(8, scale * 100 * 3),
-    heightPct: Math.max(8, scale * 100 * 3 * (totalHeight / totalWidth)),
-  };
+  let widthPct = maxWidthPct;
+  let heightPct = widthPct * aspectRatio;
+
+  if (heightPct > maxHeightPct) {
+    heightPct = maxHeightPct;
+    widthPct = heightPct / aspectRatio;
+  }
+
+  const minSizePct = 10;
+  widthPct = Math.max(minSizePct, Math.min(maxWidthPct, widthPct));
+  heightPct = Math.max(minSizePct, Math.min(maxHeightPct, heightPct));
+
+  return { widthPct, heightPct };
 }
