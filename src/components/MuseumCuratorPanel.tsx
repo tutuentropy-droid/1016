@@ -1,10 +1,18 @@
-import { useState } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useGameStore } from "@/store/useGameStore";
 import {
   getAllCuratorialThemes,
   paintings,
   PAINTING_CURATORIAL_TAGS,
   CURATORIAL_TAG_LABELS,
+  getAllCuratorHalls,
+  getPaintingSize,
+  calculatePaintingDisplayScale,
+  FRAME_STYLE_LABELS,
+  type CuratorHallLayout,
+  type CuratorHallId,
+  type CuratorPlacedArtwork,
+  type FrameStyle,
 } from "@/data/paintings";
 import type {
   CuratorialEvaluation,
@@ -27,13 +35,199 @@ import {
   GalleryHorizontal,
   ChevronRight,
   Trophy,
+  Move,
+  Maximize2,
+  Grid3X3,
+  Ruler,
 } from "lucide-react";
 import { audioManager } from "@/utils/audioManager";
 
-function ThemeSelectStage({
+function getFrameClass(frameStyle: FrameStyle): string {
+  const classMap: Record<FrameStyle, string> = {
+    gold_ornate: "frame-gold-carved",
+    dark_wood: "frame-dark-wood",
+    white_modern: "frame-white-modern",
+    silver_classic: "frame-silver-classic",
+    no_frame: "frame-frameless",
+  };
+  return classMap[frameStyle] || "frame-gold-carved";
+}
+
+function HallSelectStage({
   onSelect,
 }: {
+  onSelect: (hallId: string) => void;
+}) {
+  const halls = getAllCuratorHalls();
+  const wallClassMap: Record<string, string> = {
+    classic_gallery: "hall-wall-classic",
+    white_cube: "hall-wall-whitecube",
+    loft_industrial: "hall-wall-loft",
+    baroque_salon: "hall-wall-baroque",
+    japanese_tearoom: "hall-wall-japanese",
+  };
+  const floorClassMap: Record<string, string> = {
+    herringbone_wood: "hall-floor-herringbone",
+    concrete: "hall-floor-concrete",
+    marble: "hall-floor-marble",
+    tatami: "hall-floor-tatami",
+  };
+  const baseboardClassMap: Record<string, string> = {
+    classic_gallery: "baseboard-classic",
+    white_cube: "baseboard-white",
+    loft_industrial: "baseboard-loft",
+    baroque_salon: "baseboard-classic",
+    japanese_tearoom: "baseboard-japanese",
+  };
+
+  return (
+    <div className="animate-fadeInUp">
+      <div className="text-center mb-6">
+        <div className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gold/10 rounded-full border border-gold/20 mb-4">
+          <Grid3X3 size={16} className="text-gold" />
+          <span className="font-display text-sm font-semibold text-gold">
+            展馆选择
+          </span>
+        </div>
+        <h2 className="font-display text-2xl font-bold text-ink mb-2">
+          选择你的展览展厅
+        </h2>
+        <p className="text-sm text-ink/60 font-serif">
+          不同风格的展厅拥有独特的墙面、地板和灯光效果，选择最适合你策展主题的空间
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {halls.map((hall, idx) => (
+          <button
+            key={hall.id}
+            onClick={() => {
+              audioManager.play("paper_flip");
+              onSelect(hall.id);
+            }}
+            className="group text-left file-card overflow-hidden hover:shadow-lg transition-all hover:-translate-y-1 animate-fadeInUp"
+            style={{ animationDelay: `${idx * 60}ms` }}
+          >
+            <div
+              className={`hall-wall relative h-40 ${wallClassMap[hall.id] || "hall-wall-classic"}`}
+            >
+              <div className="track-light">
+                {[15, 35, 55, 75].map((pos) => (
+                  <div
+                    key={pos}
+                    className="track-light-fixture"
+                    style={{ left: `${pos}%` }}
+                  />
+                ))}
+              </div>
+              <div className="spotlight-overlay" />
+              <div className={`baseboard ${baseboardClassMap[hall.id] || "baseboard-classic"}`} />
+              <div className="absolute bottom-6 left-0 right-0 flex items-center justify-center gap-2 px-4">
+                {hall.lightStyle === "warm_track" &&
+                  [25, 50, 75].map((pos, i) => (
+                    <div
+                      key={i}
+                      className="w-6 h-8 painting-frame frame-gold-carved"
+                      style={{
+                        background: `linear-gradient(135deg, hsl(${i * 40}, 60%, 70%) 0%, hsl(${i * 40 + 30}, 50%, 50%) 100%)`,
+                      }}
+                    />
+                  ))}
+                {hall.lightStyle === "cool_spotlight" &&
+                  [30, 60].map((pos, i) => (
+                    <div
+                      key={i}
+                      className="w-10 h-12 painting-frame frame-white-modern"
+                      style={{
+                        background: `linear-gradient(135deg, hsl(${200 + i * 20}, 40%, 80%) 0%, hsl(${220 + i * 20}, 30%, 60%) 100%)`,
+                      }}
+                    />
+                  ))}
+                {hall.lightStyle === "industrial_pendant" &&
+                  [40, 65].map((pos, i) => (
+                    <div
+                      key={i}
+                      className="w-8 h-10 painting-frame frame-dark-wood"
+                      style={{
+                        background: `linear-gradient(135deg, hsl(${i * 30}, 50%, 40%) 0%, hsl(${i * 30 + 20}, 40%, 25%) 100%)`,
+                      }}
+                    />
+                  ))}
+                {hall.lightStyle === "crystal_chandelier" &&
+                  [20, 45, 70].map((pos, i) => (
+                    <div
+                      key={i}
+                      className="w-7 h-9 painting-frame frame-silver-classic"
+                      style={{
+                        background: `linear-gradient(135deg, hsl(${320 + i * 15}, 60%, 60%) 0%, hsl(${340 + i * 15}, 50%, 40%) 100%)`,
+                      }}
+                    />
+                  ))}
+                {hall.lightStyle === "paper_lantern" &&
+                  [35, 60].map((pos, i) => (
+                    <div
+                      key={i}
+                      className="w-9 h-11 painting-frame frame-frameless"
+                      style={{
+                        background: `linear-gradient(135deg, hsl(${40 + i * 10}, 70%, 85%) 0%, hsl(${50 + i * 10}, 60%, 70%) 100%)`,
+                      }}
+                    />
+                  ))}
+              </div>
+            </div>
+            <div
+              className={`hall-floor h-10 ${floorClassMap[hall.floorStyle] || "hall-floor-herringbone"}`}
+            />
+            <div className="p-4">
+              <div className="flex items-start gap-2 mb-2">
+                <span className="text-2xl">{hall.icon}</span>
+                <div>
+                  <h3 className="font-display text-lg font-bold text-ink group-hover:text-gold transition-colors">
+                    {hall.name}
+                  </h3>
+                  <p className="text-[10px] text-ink/40 uppercase tracking-wider font-serif">
+                    {hall.nameEn}
+                  </p>
+                </div>
+              </div>
+              <p className="text-xs text-ink/60 font-serif leading-relaxed mb-3">
+                {hall.description}
+              </p>
+              <div className="flex items-center justify-between pt-3 border-t border-ink/10">
+                <div className="flex items-center gap-1.5">
+                  <Ruler size={12} className="text-ink/40" />
+                  <span className="text-[10px] text-ink/50 font-serif">
+                    最大 {hall.maxWorks} 幅
+                  </span>
+                </div>
+                <span className="text-[10px] text-ink/40 font-serif">
+                  {hall.minWorks} 幅起展
+                </span>
+              </div>
+              <div className="mt-2 flex flex-wrap gap-1">
+                {hall.tags.map((tag, i) => (
+                  <span
+                    key={i}
+                    className="px-1.5 py-0.5 bg-ink/5 text-ink/50 text-[9px] rounded border border-ink/10 font-serif"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ThemeSelectStage({
+  onSelect,
+  selectedHall,
+}: {
   onSelect: (themeId: string) => void;
+  selectedHall: CuratorHallLayout | null;
 }) {
   const themes = getAllCuratorialThemes();
   const difficultyColors: Record<string, string> = {
@@ -50,6 +244,15 @@ function ThemeSelectStage({
   return (
     <div className="animate-fadeInUp">
       <div className="text-center mb-6">
+        {selectedHall && (
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-parchment-dark/50 rounded-full border border-ink/10 mb-3">
+            <span className="text-lg">{selectedHall.icon}</span>
+            <span className="font-display text-xs font-semibold text-ink/70">
+              {selectedHall.name}
+            </span>
+            <ChevronRight size={12} className="text-ink/30" />
+          </div>
+        )}
         <div className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gold/10 rounded-full border border-gold/20 mb-4">
           <Palette size={16} className="text-gold" />
           <span className="font-display text-sm font-semibold text-gold">
@@ -131,15 +334,22 @@ function MiniPaintingCard({
   onClick,
   selected,
   compact = false,
+  draggable = false,
+  onDragStart,
+  onDragEnd,
 }: {
   paintingId: string;
   onClick?: () => void;
   selected?: boolean;
   compact?: boolean;
+  draggable?: boolean;
+  onDragStart?: (e: React.DragEvent) => void;
+  onDragEnd?: () => void;
 }) {
   const painting = paintings.find((p) => p.id === paintingId);
   if (!painting) return null;
   const tags = PAINTING_CURATORIAL_TAGS[paintingId] || [];
+  const size = getPaintingSize(paintingId);
 
   return (
     <div
@@ -147,8 +357,11 @@ function MiniPaintingCard({
         selected
           ? "ring-2 ring-gold ring-offset-2 ring-offset-parchment-dark scale-[1.02]"
           : "hover:scale-[1.02]"
-      }`}
+      } ${draggable ? "artwork-drag-handle" : ""}`}
       onClick={onClick}
+      draggable={draggable}
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
     >
       <div className="overflow-hidden rounded-sm border border-ink/10 bg-white shadow-archive-card">
         <div className="relative" style={{ aspectRatio: "4/3" }}>
@@ -169,11 +382,17 @@ function MiniPaintingCard({
               </p>
             </div>
           )}
+          {size && (
+            <div className="absolute top-1.5 left-1.5 px-1.5 py-0.5 bg-black/60 text-white text-[8px] rounded font-serif flex items-center gap-0.5">
+              <Ruler size={8} />
+              {size.widthCm}×{size.heightCm}cm
+            </div>
+          )}
         </div>
       </div>
       {!compact && tags.length > 0 && (
-        <div className="absolute top-1.5 right-1.5 flex flex-wrap gap-0.5 max-w-[70%] justify-end">
-          {tags.slice(0, 3).map((tag) => (
+        <div className="absolute top-1.5 right-1.5 flex flex-wrap gap-0.5 max-w-[60%] justify-end">
+          {tags.slice(0, 2).map((tag) => (
             <span
               key={tag}
               className="px-1 py-0.5 bg-white/90 backdrop-blur-sm text-[8px] rounded text-ink/70 font-serif"
@@ -192,18 +411,276 @@ function MiniPaintingCard({
   );
 }
 
+function PlacedPainting({
+  artwork,
+  hall,
+  onMove,
+  onRemove,
+}: {
+  artwork: CuratorPlacedArtwork;
+  hall: CuratorHallLayout;
+  onMove: (id: string, x: number, y: number) => void;
+  onRemove: (id: string) => void;
+}) {
+  const painting = paintings.find((p) => p.id === artwork.paintingId);
+  const size = getPaintingSize(artwork.paintingId);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartRef = useRef<{ x: number; y: number; posX: number; posY: number } | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  if (!painting || !size) return null;
+
+  const { widthPct, heightPct } = calculatePaintingDisplayScale(size, hall);
+  const frameStyle = size.frameStyle;
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+    dragStartRef.current = {
+      x: e.clientX,
+      y: e.clientY,
+      posX: artwork.positionX,
+      posY: artwork.positionY,
+    };
+  };
+
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!dragStartRef.current || !containerRef.current) return;
+      const parent = containerRef.current.parentElement;
+      if (!parent) return;
+
+      const rect = parent.getBoundingClientRect();
+      const dx = ((e.clientX - dragStartRef.current.x) / rect.width) * 100;
+      const dy = ((e.clientY - dragStartRef.current.y) / rect.height) * 100;
+
+      let newX = dragStartRef.current.posX + dx;
+      let newY = dragStartRef.current.posY + dy;
+
+      newX = Math.max(widthPct / 2 + 2, Math.min(98 - widthPct / 2, newX));
+      newY = Math.max(heightPct / 2 + 5, Math.min(88 - heightPct / 2, newY));
+
+      onMove(artwork.id, newX, newY);
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+      dragStartRef.current = null;
+      audioManager.play("paper_flip");
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isDragging, artwork.id, artwork.positionX, artwork.positionY, widthPct, heightPct, onMove]);
+
+  return (
+    <div
+      ref={containerRef}
+      className="absolute artwork-drag-handle z-10"
+      style={{
+        left: `${artwork.positionX}%`,
+        top: `${artwork.positionY}%`,
+        width: `${widthPct}%`,
+        transform: `translate(-50%, -50%) rotate(${artwork.rotation || 0}deg)`,
+        transition: isDragging ? "none" : "transform 0.2s ease, box-shadow 0.3s ease",
+        zIndex: isDragging ? 50 : 10,
+      }}
+      onMouseDown={handleMouseDown}
+    >
+      <div className={`painting-frame ${getFrameClass(frameStyle)}`}>
+        <div className="painting-mat">
+          <div className="relative" style={{ aspectRatio: `${size.widthCm} / ${size.heightCm}` }}>
+            <img
+              src={painting.imageUrl}
+              alt={painting.title}
+              className="w-full h-full object-cover select-none"
+              draggable={false}
+            />
+          </div>
+        </div>
+      </div>
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          audioManager.play("detail_focus");
+          onRemove(artwork.id);
+        }}
+        className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-terracotta/90 text-white flex items-center justify-center shadow-lg hover:scale-110 transition-transform opacity-0 group-hover:opacity-100"
+        style={{ pointerEvents: "auto" }}
+      >
+        <X size={12} />
+      </button>
+      <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 whitespace-nowrap text-[9px] font-serif bg-black/70 text-white/80 px-2 py-0.5 rounded pointer-events-none opacity-0 hover:opacity-100 transition-opacity">
+        {painting.title} · {FRAME_STYLE_LABELS[frameStyle]}
+      </div>
+    </div>
+  );
+}
+
+function HallCanvas({
+  hall,
+  placedArtworks,
+  onArtworkDrop,
+  onArtworkMove,
+  onArtworkRemove,
+  onCanvasClick,
+}: {
+  hall: CuratorHallLayout;
+  placedArtworks: CuratorPlacedArtwork[];
+  onArtworkDrop: (paintingId: string, x: number, y: number) => void;
+  onArtworkMove: (id: string, x: number, y: number) => void;
+  onArtworkRemove: (id: string) => void;
+  onCanvasClick?: (x: number, y: number) => void;
+}) {
+  const [isDragOver, setIsDragOver] = useState(false);
+  const canvasRef = useRef<HTMLDivElement>(null);
+  const [selectedPaintingId, setSelectedPaintingId] = useState<string | null>(null);
+
+  const wallClassMap: Record<string, string> = {
+    classic_gallery: "hall-wall-classic",
+    white_cube: "hall-wall-whitecube",
+    loft_industrial: "hall-wall-loft",
+    baroque_salon: "hall-wall-baroque",
+    japanese_tearoom: "hall-wall-japanese",
+  };
+  const floorClassMap: Record<string, string> = {
+    herringbone_wood: "hall-floor-herringbone",
+    concrete: "hall-floor-concrete",
+    marble: "hall-floor-marble",
+    tatami: "hall-floor-tatami",
+  };
+  const baseboardClassMap: Record<string, string> = {
+    classic_gallery: "baseboard-classic",
+    white_cube: "baseboard-white",
+    loft_industrial: "baseboard-loft",
+    baroque_salon: "baseboard-classic",
+    japanese_tearoom: "baseboard-japanese",
+  };
+
+  const getPositionFromEvent = (e: React.DragEvent | React.MouseEvent) => {
+    if (!canvasRef.current) return { x: 50, y: 50 };
+    const rect = canvasRef.current.getBoundingClientRect();
+    const clientX = "clientX" in e ? e.clientX : 0;
+    const clientY = "clientY" in e ? e.clientY : 0;
+    let x = ((clientX - rect.left) / rect.width) * 100;
+    let y = ((clientY - rect.top) / rect.height) * 100;
+    x = Math.max(5, Math.min(95, x));
+    y = Math.max(10, Math.min(85, y));
+    return { x, y };
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    const paintingId = e.dataTransfer.getData("paintingId");
+    if (!paintingId) return;
+    const pos = getPositionFromEvent(e);
+    audioManager.play("paper_flip");
+    onArtworkDrop(paintingId, pos.x, pos.y);
+  };
+
+  const handleCanvasClick = (e: React.MouseEvent) => {
+    if (!onCanvasClick) return;
+    const pos = getPositionFromEvent(e);
+    onCanvasClick(pos.x, pos.y);
+  };
+
+  return (
+    <div className="space-y-3">
+      <div
+        ref={canvasRef}
+        className={`relative droppable-zone rounded-sm overflow-hidden border-2 border-ink/20 shadow-2xl ${
+          isDragOver ? "drag-over" : ""
+        }`}
+        style={{ aspectRatio: "16 / 9", minHeight: "380px" }}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setIsDragOver(true);
+        }}
+        onDragLeave={() => setIsDragOver(false)}
+        onDrop={handleDrop}
+        onClick={handleCanvasClick}
+      >
+        <div className={`hall-wall absolute inset-0 ${wallClassMap[hall.id] || "hall-wall-classic"}`}>
+          <div className="track-light">
+            {[12, 28, 44, 60, 76, 88].map((pos) => (
+              <div
+                key={pos}
+                className="track-light-fixture"
+                style={{ left: `${pos}%` }}
+              />
+            ))}
+          </div>
+          <div className="spotlight-overlay" />
+          <div className={`baseboard ${baseboardClassMap[hall.id] || "baseboard-classic"}`} />
+        </div>
+        <div
+          className={`hall-floor absolute bottom-0 left-0 right-0 ${floorClassMap[hall.floorStyle] || "hall-floor-herringbone"}`}
+          style={{ height: "12%" }}
+        />
+        <div className="absolute inset-0">
+          {placedArtworks.map((artwork) => (
+            <PlacedPainting
+              key={artwork.id}
+              artwork={artwork}
+              hall={hall}
+              onMove={onArtworkMove}
+              onRemove={onArtworkRemove}
+            />
+          ))}
+        </div>
+        {placedArtworks.length === 0 && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="text-center px-6 py-4 bg-black/30 backdrop-blur-sm rounded-sm">
+              <Move size={32} className="mx-auto text-white/50 mb-2" />
+              <p className="font-display text-sm text-white/70 mb-1">
+                拖放作品到展厅墙面
+              </p>
+              <p className="text-[11px] text-white/50 font-serif">
+                从下方作品库拖拽，点击已放置作品可拖拽调整位置
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+      <div className="flex items-center justify-between text-xs text-ink/50 font-serif">
+        <div className="flex items-center gap-3">
+          <span>墙面可用：{Math.round((1 - placedArtworks.length / hall.maxWorks) * 100)}%</span>
+          <span>已放置：{placedArtworks.length}/{hall.maxWorks} 幅</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <span className="text-ink/30">提示：</span>
+          <span>画作按真实尺寸比例显示</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function CuratingStage() {
   const {
     curatorCurrentTheme,
     curatorAvailablePaintings,
     curatorExhibitionSlots,
+    curatorPlacedArtworks,
+    curatorSelectedHall,
     curatorNarrativeText,
     placePaintingInSlot,
     removePaintingFromSlot,
     movePaintingSlot,
+    placeCuratorArtwork,
+    updateCuratorArtworkPosition,
+    removeCuratorArtwork,
     setCuratorNarrativeText,
     submitCuratorExhibition,
     resetCurator,
+    setCuratorPhase,
   } = useGameStore();
 
   const [draggedSlot, setDraggedSlot] = useState<string | null>(null);
@@ -211,21 +688,47 @@ function CuratingStage() {
   const [selectedPaintingId, setSelectedPaintingId] = useState<string | null>(
     null
   );
+  const [useGalleryMode, setUseGalleryMode] = useState(false);
 
-  if (!curatorCurrentTheme) return null;
+  if (!curatorCurrentTheme || !curatorSelectedHall) return null;
 
-  const usedPaintingIds = curatorExhibitionSlots
-    .filter((s) => s.paintingId)
-    .map((s) => s.paintingId!) as string[];
-  const filledSlots = curatorExhibitionSlots.filter((s) => s.paintingId).length;
-  const canSubmit = filledSlots >= curatorCurrentTheme.minWorks;
+  const usedPaintingIds = [
+    ...curatorExhibitionSlots
+      .filter((s) => s.paintingId)
+      .map((s) => s.paintingId!) as string[],
+    ...curatorPlacedArtworks.map((a) => a.paintingId),
+  ];
+  const filledSlots =
+    curatorExhibitionSlots.filter((s) => s.paintingId).length +
+    curatorPlacedArtworks.length;
+  const minWorks = Math.max(curatorCurrentTheme.minWorks, curatorSelectedHall.minWorks);
+  const maxWorks = Math.min(curatorCurrentTheme.maxWorks, curatorSelectedHall.maxWorks);
+  const canSubmit = filledSlots >= minWorks && filledSlots <= maxWorks;
 
   const handlePaintingSelect = (paintingId: string) => {
     if (usedPaintingIds.includes(paintingId)) return;
-    const emptySlot = curatorExhibitionSlots.find((s) => !s.paintingId);
-    if (!emptySlot) return;
-    audioManager.play("paper_flip");
-    placePaintingInSlot(emptySlot.id, paintingId);
+    if (useGalleryMode) {
+      const emptySlot = curatorExhibitionSlots.find((s) => !s.paintingId);
+      if (!emptySlot) return;
+      audioManager.play("paper_flip");
+      placePaintingInSlot(emptySlot.id, paintingId);
+    } else {
+      setSelectedPaintingId(paintingId);
+    }
+    setSelectedPaintingId(null);
+  };
+
+  const handlePaintingDragStart = (e: React.DragEvent, paintingId: string) => {
+    if (usedPaintingIds.includes(paintingId)) {
+      e.preventDefault();
+      return;
+    }
+    e.dataTransfer.setData("paintingId", paintingId);
+    e.dataTransfer.effectAllowed = "copy";
+    setSelectedPaintingId(paintingId);
+  };
+
+  const handlePaintingDragEnd = () => {
     setSelectedPaintingId(null);
   };
 
@@ -250,14 +753,17 @@ function CuratingStage() {
     <div className="animate-fadeInUp space-y-5">
       <div className="file-card p-5">
         <div className="flex items-start gap-4">
-          <span className="text-4xl">{curatorCurrentTheme.icon}</span>
+          <div className="flex flex-col items-center gap-1">
+            <span className="text-3xl">{curatorSelectedHall.icon}</span>
+            <span className="text-2xl">{curatorCurrentTheme.icon}</span>
+          </div>
           <div className="flex-1">
             <div className="flex items-center gap-2 flex-wrap mb-1">
               <h2 className="font-display text-xl font-bold text-ink">
                 {curatorCurrentTheme.title}
               </h2>
               <span className="text-[10px] text-ink/40 uppercase tracking-wider font-serif">
-                {curatorCurrentTheme.titleEn}
+                @ {curatorSelectedHall.name}
               </span>
             </div>
             <p className="text-sm text-ink/60 font-serif mb-2">
@@ -282,7 +788,7 @@ function CuratingStage() {
               ))}
             </div>
           </div>
-          <div className="text-right">
+          <div className="text-right space-y-2">
             <div
               className={`inline-flex items-center gap-1 px-3 py-1 rounded-full border text-sm font-display font-bold ${
                 canSubmit
@@ -292,13 +798,23 @@ function CuratingStage() {
             >
               {filledSlots}
               <span className="text-ink/40">/</span>
-              {curatorCurrentTheme.minWorks}-
-              {curatorCurrentTheme.maxWorks}
+              {minWorks}-{maxWorks}
               {canSubmit && <CheckCircle size={14} />}
             </div>
-            <p className="text-[10px] text-ink/40 font-serif mt-1">
-              最少 {curatorCurrentTheme.minWorks} 幅
+            <p className="text-[10px] text-ink/40 font-serif">
+              最少 {minWorks} 幅 / 最多 {maxWorks} 幅
             </p>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => {
+                  audioManager.play("paper_flip");
+                  setCuratorPhase("hallSelect");
+                }}
+                className="text-[10px] text-ink/40 hover:text-ink/70 font-serif underline underline-offset-2"
+              >
+                更换展厅
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -307,105 +823,146 @@ function CuratingStage() {
         <div className="flex items-center gap-2 mb-4">
           <GalleryHorizontal size={16} className="text-gold" />
           <h3 className="font-display text-base font-bold text-ink">
-            展览布局墙
+            展厅布局墙
           </h3>
-          <span className="text-[10px] text-ink/40 uppercase tracking-wider font-serif ml-auto">
-            Exhibition Wall · 点击作品可选中后再点击空位移除
-          </span>
-        </div>
-
-        <div className="relative p-6 bg-gradient-to-br from-museum-warm via-museum-dark to-museum-warm rounded-sm border-2 border-frame-dark/50 shadow-museum-spotlight min-h-[260px]">
-          <div className="absolute inset-0 opacity-20 pointer-events-none"
-            style={{
-              background:
-                "radial-gradient(ellipse at 50% 30%, rgba(212, 160, 23, 0.3) 0%, transparent 60%)",
-            }}
-          />
-          <div className="relative grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-            {curatorExhibitionSlots.map((slot, idx) => {
-              const isOver = dragOverSlot === slot.id;
-              return (
-                <div
-                  key={slot.id}
-                  draggable={!!slot.paintingId}
-                  onDragStart={() =>
-                    slot.paintingId && setDraggedSlot(slot.id)
-                  }
-                  onDragEnd={() => {
-                    setDraggedSlot(null);
-                    setDragOverSlot(null);
-                  }}
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    setDragOverSlot(slot.id);
-                  }}
-                  onDragLeave={() => setDragOverSlot(null)}
-                  onDrop={() => {
-                    if (draggedSlot && draggedSlot !== slot.id) {
-                      audioManager.play("paper_flip");
-                      movePaintingSlot(draggedSlot, slot.id);
-                    }
-                    setDraggedSlot(null);
-                    setDragOverSlot(null);
-                  }}
-                  onClick={() => handleSlotClick(slot.id)}
-                  className={`relative transition-all ${
-                    isOver
-                      ? "scale-105 z-10"
-                      : draggedSlot && draggedSlot === slot.id
-                      ? "opacity-50"
-                      : ""
-                  }`}
-                >
-                  {slot.paintingId ? (
-                    <div className="relative">
-                      <MiniPaintingCard
-                        paintingId={slot.paintingId}
-                        selected={selectedPaintingId === slot.paintingId}
-                      />
-                      <div className="absolute -left-1 -top-1 w-6 h-6 rounded-full bg-gold text-white font-display text-xs font-bold flex items-center justify-center shadow-lg">
-                        {idx + 1}
-                      </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          audioManager.play("detail_focus");
-                          removePaintingFromSlot(slot.id);
-                        }}
-                        className="absolute -right-1 -top-1 w-5 h-5 rounded-full bg-terracotta/90 text-white flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
-                      >
-                        <X size={12} />
-                      </button>
-                      <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 text-[9px] text-white/70 font-serif bg-black/60 px-2 py-0.5 rounded-full">
-                        拖拽排序
-                      </div>
-                    </div>
-                  ) : (
-                    <div
-                      className={`aspect-[4/3] rounded-sm border-2 border-dashed flex flex-col items-center justify-center transition-all cursor-pointer ${
-                        isOver
-                          ? "border-gold bg-gold/10"
-                          : "border-white/20 bg-white/5 hover:border-white/40 hover:bg-white/10"
-                      }`}
-                    >
-                      <Plus
-                        size={20}
-                        className={isOver ? "text-gold" : "text-white/40"}
-                      />
-                      <span
-                        className={`text-[10px] mt-1 font-serif ${
-                          isOver ? "text-gold" : "text-white/40"
-                        }`}
-                      >
-                        展位 {idx + 1}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+          <div className="ml-auto flex items-center gap-2">
+            <button
+              onClick={() => {
+                audioManager.play("detail_focus");
+                setUseGalleryMode(false);
+              }}
+              className={`text-[10px] px-3 py-1 rounded-full border font-serif transition-all ${
+                !useGalleryMode
+                  ? "bg-gold/15 text-gold border-gold/30 font-semibold"
+                  : "bg-white/50 text-ink/50 border-ink/10 hover:border-ink/20"
+              }`}
+            >
+              <span className="flex items-center gap-1">
+                <Maximize2 size={11} />
+                自由布置
+              </span>
+            </button>
+            <button
+              onClick={() => {
+                audioManager.play("detail_focus");
+                setUseGalleryMode(true);
+              }}
+              className={`text-[10px] px-3 py-1 rounded-full border font-serif transition-all ${
+                useGalleryMode
+                  ? "bg-gold/15 text-gold border-gold/30 font-semibold"
+                  : "bg-white/50 text-ink/50 border-ink/10 hover:border-ink/20"
+              }`}
+            >
+              <span className="flex items-center gap-1">
+                <Grid3X3 size={11} />
+                网格展位
+              </span>
+            </button>
           </div>
         </div>
+
+        {!useGalleryMode ? (
+          <HallCanvas
+            hall={curatorSelectedHall}
+            placedArtworks={curatorPlacedArtworks}
+            onArtworkDrop={placeCuratorArtwork}
+            onArtworkMove={updateCuratorArtworkPosition}
+            onArtworkRemove={removeCuratorArtwork}
+          />
+        ) : (
+          <div className="relative p-6 bg-gradient-to-br from-museum-warm via-museum-dark to-museum-warm rounded-sm border-2 border-frame-dark/50 shadow-museum-spotlight min-h-[260px]">
+            <div className="absolute inset-0 opacity-20 pointer-events-none"
+              style={{
+                background:
+                  "radial-gradient(ellipse at 50% 30%, rgba(212, 160, 23, 0.3) 0%, transparent 60%)",
+              }}
+            />
+            <div className="relative grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+              {curatorExhibitionSlots.map((slot, idx) => {
+                const isOver = dragOverSlot === slot.id;
+                return (
+                  <div
+                    key={slot.id}
+                    draggable={!!slot.paintingId}
+                    onDragStart={() =>
+                      slot.paintingId && setDraggedSlot(slot.id)
+                    }
+                    onDragEnd={() => {
+                      setDraggedSlot(null);
+                      setDragOverSlot(null);
+                    }}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setDragOverSlot(slot.id);
+                    }}
+                    onDragLeave={() => setDragOverSlot(null)}
+                    onDrop={() => {
+                      if (draggedSlot && draggedSlot !== slot.id) {
+                        audioManager.play("paper_flip");
+                        movePaintingSlot(draggedSlot, slot.id);
+                      }
+                      setDraggedSlot(null);
+                      setDragOverSlot(null);
+                    }}
+                    onClick={() => handleSlotClick(slot.id)}
+                    className={`relative transition-all ${
+                      isOver
+                        ? "scale-105 z-10"
+                        : draggedSlot && draggedSlot === slot.id
+                        ? "opacity-50"
+                        : ""
+                    }`}
+                  >
+                    {slot.paintingId ? (
+                      <div className="relative">
+                        <MiniPaintingCard
+                          paintingId={slot.paintingId}
+                          selected={selectedPaintingId === slot.paintingId}
+                        />
+                        <div className="absolute -left-1 -top-1 w-6 h-6 rounded-full bg-gold text-white font-display text-xs font-bold flex items-center justify-center shadow-lg">
+                          {idx + 1}
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            audioManager.play("detail_focus");
+                            removePaintingFromSlot(slot.id);
+                          }}
+                          className="absolute -right-1 -top-1 w-5 h-5 rounded-full bg-terracotta/90 text-white flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
+                        >
+                          <X size={12} />
+                        </button>
+                        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 text-[9px] text-white/70 font-serif bg-black/60 px-2 py-0.5 rounded-full">
+                          拖拽排序
+                        </div>
+                      </div>
+                    ) : (
+                      <div
+                        className={`aspect-[4/3] rounded-sm border-2 border-dashed flex flex-col items-center justify-center transition-all cursor-pointer ${
+                          isOver
+                            ? "border-gold bg-gold/10"
+                            : "border-white/20 bg-white/5 hover:border-white/40 hover:bg-white/10"
+                        }`}
+                      >
+                        <Plus
+                          size={20}
+                          className={isOver ? "text-gold" : "text-white/40"}
+                        />
+                        <span
+                          className={`text-[10px] mt-1 font-serif ${
+                            isOver ? "text-gold" : "text-white/40"
+                          }`}
+                        >
+                          展位 {idx + 1}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="file-card p-5">
@@ -415,7 +972,7 @@ function CuratingStage() {
             候选作品库
           </h3>
           <span className="text-[10px] text-ink/40 uppercase tracking-wider font-serif ml-auto">
-            点击作品添加到下一个空展位
+            {!useGalleryMode ? "拖拽作品到展厅墙面放置" : "点击作品添加到下一个空展位"}
           </span>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
@@ -430,6 +987,9 @@ function CuratingStage() {
                   paintingId={painting.id}
                   onClick={() => handlePaintingSelect(painting.id)}
                   selected={selectedPaintingId === painting.id}
+                  draggable={!useGalleryMode && !used}
+                  onDragStart={(e) => handlePaintingDragStart(e, painting.id)}
+                  onDragEnd={handlePaintingDragEnd}
                 />
               </div>
             );
@@ -476,7 +1036,7 @@ function CuratingStage() {
           className="flex items-center gap-1.5 px-5 py-2.5 bg-white/60 border border-ink/15 rounded-sm text-ink/60 font-display text-sm hover:bg-white hover:text-ink transition-all"
         >
           <RotateCcw size={14} />
-          重新选择主题
+          重新开始
         </button>
         <button
           onClick={() => {
@@ -542,6 +1102,8 @@ function EvaluationStage() {
   const {
     curatorCurrentTheme,
     curatorExhibitionSlots,
+    curatorPlacedArtworks,
+    curatorSelectedHall,
     curatorEvaluation,
     curatorNarrativeText,
     resetCurator,
@@ -550,9 +1112,15 @@ function EvaluationStage() {
 
   if (!curatorCurrentTheme || !curatorEvaluation) return null;
 
-  const selectedPaintings = curatorExhibitionSlots
+  const selectedIdsFromSlots = curatorExhibitionSlots
     .filter((s) => s.paintingId)
-    .map((s) => paintings.find((p) => p.id === s.paintingId))
+    .map((s) => s.paintingId!) as string[];
+  const selectedIdsFromWall = curatorPlacedArtworks.map((a) => a.paintingId);
+  const allSelectedIds = Array.from(
+    new Set([...selectedIdsFromSlots, ...selectedIdsFromWall])
+  );
+  const selectedPaintings = allSelectedIds
+    .map((id) => paintings.find((p) => p.id === id))
     .filter(Boolean) as typeof paintings;
 
   const rankBadge: Record<CuratorialEvaluation["rank"], { bg: string; icon: string; label: string }> = {
@@ -740,6 +1308,7 @@ function EvaluationStage() {
             你的展览
           </h3>
           <span className="text-[10px] text-ink/40 uppercase tracking-wider font-serif ml-auto">
+            {curatorSelectedHall ? `${curatorSelectedHall.name} · ` : ""}
             {curatorCurrentTheme.title} · {selectedPaintings.length} 幅作品
           </span>
         </div>
@@ -785,7 +1354,7 @@ function EvaluationStage() {
           className="flex items-center gap-1.5 px-6 py-2.5 bg-white/60 border border-ink/15 rounded-sm text-ink/60 font-display text-sm hover:bg-white hover:text-ink transition-all"
         >
           <Palette size={14} />
-          选择新主题
+          选择新展厅
         </button>
         <button
           onClick={() => {
@@ -816,7 +1385,9 @@ function EvaluationStage() {
 export default function MuseumCuratorPanel() {
   const {
     curatorPhase,
+    curatorSelectedHall,
     curatorExhibitionsCompleted,
+    selectCuratorHall,
     selectCuratorTheme,
     resetCurator,
   } = useGameStore();
@@ -848,7 +1419,7 @@ export default function MuseumCuratorPanel() {
               场展览
             </span>
           </div>
-          {curatorPhase !== "themeSelect" && (
+          {curatorPhase !== "hallSelect" && (
             <button
               onClick={() => {
                 audioManager.play("paper_flip");
@@ -857,15 +1428,22 @@ export default function MuseumCuratorPanel() {
               className="flex items-center gap-1 px-3 py-1.5 text-xs font-serif text-ink/50 hover:text-ink transition-colors"
             >
               <RotateCcw size={12} />
-              回到主题选择
+              回到展厅选择
             </button>
           )}
         </div>
       </div>
 
+      {curatorPhase === "hallSelect" && (
+        <HallSelectStage
+          onSelect={(id) => selectCuratorHall(id as CuratorHallId)}
+        />
+      )}
+
       {curatorPhase === "themeSelect" && (
         <ThemeSelectStage
           onSelect={(id) => selectCuratorTheme(id)}
+          selectedHall={curatorSelectedHall}
         />
       )}
 

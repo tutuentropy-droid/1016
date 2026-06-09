@@ -21,6 +21,12 @@ import type {
   AuctionPhase,
   PlayerCollectionItem,
   AuctionSettlement,
+  InvestigationCase,
+  ExhibitionHallId,
+  ExhibitionClue,
+  CuratorHallId,
+  CuratorHallLayout,
+  CuratorPlacedArtwork,
 } from "@/data/paintings";
 import {
   getAllCampCombinations,
@@ -34,6 +40,9 @@ import {
   generateAuctionPaintings,
   generateAuctionBidders,
   generateMarketEvent,
+  pickRandomInvestigationCase,
+  INVESTIGATION_CASES,
+  getCuratorHallById,
 } from "@/data/paintings";
 import {
   pickRandomPainting,
@@ -50,16 +59,26 @@ import {
   calculateBidAmount,
   calculatePaintingCurrentValue,
   calculateAuctionSettlement,
+  calculateInvestigationScore,
 } from "@/utils/gameLogic";
 
 export type Confidence = "low" | "medium" | "high";
 export type CasePhase = "opening" | "briefing" | "investigating" | "answered";
 export type AppPage = "game" | "collection" | "graph";
-export type GameMode = "standard" | "evolution" | "forgery" | "confusionCamp" | "curator" | "theft" | "auction";
+export type GameMode = "standard" | "evolution" | "forgery" | "confusionCamp" | "curator" | "theft" | "auction" | "investigation";
+
+export type InvestigationPhase = "hallSelect" | "briefing" | "exploring" | "questioning" | "report";
+
+export interface InvestigationAnswer {
+  questionId: string;
+  selectedOptionId: string;
+  isCorrect: boolean;
+}
 
 export type TheftPhase = "briefing" | "investigating" | "selecting" | "report";
 
 export type CuratorPhase =
+  | "hallSelect"
   | "themeSelect"
   | "curating"
   | "evaluation";
@@ -143,16 +162,24 @@ interface GameState {
   resetCamp: () => void;
   setCampPhase: (phase: ConfusionCampPhase) => void;
   curatorPhase: CuratorPhase;
+  curatorSelectedHallId: CuratorHallId | null;
+  curatorSelectedHall: CuratorHallLayout | null;
   curatorCurrentTheme: CuratorialTheme | null;
   curatorAvailablePaintings: Painting[];
   curatorExhibitionSlots: CuratorExhibitionSlot[];
+  curatorPlacedArtworks: CuratorPlacedArtwork[];
   curatorNarrativeText: string;
   curatorEvaluation: CuratorialEvaluation | null;
   curatorExhibitionsCompleted: number;
+  selectCuratorHall: (hallId: CuratorHallId) => void;
   selectCuratorTheme: (themeId: string) => void;
   placePaintingInSlot: (slotId: string, paintingId: string | null) => void;
   movePaintingSlot: (fromSlotId: string, toSlotId: string) => void;
   removePaintingFromSlot: (slotId: string) => void;
+  placeCuratorArtwork: (paintingId: string, positionX: number, positionY: number) => void;
+  updateCuratorArtworkPosition: (artworkId: string, positionX: number, positionY: number) => void;
+  removeCuratorArtwork: (artworkId: string) => void;
+  rotateCuratorArtwork: (artworkId: string, rotation: number) => void;
   setCuratorNarrativeText: (text: string) => void;
   submitCuratorExhibition: () => void;
   resetCurator: () => void;
@@ -246,6 +273,28 @@ interface GameState {
   unlockInvestigationClue: (paintingId: string, clueType: InvestigationClueType) => void;
   submitSinglePaintingAnswer: (paintingId: string, periodId: string) => void;
   advanceToNextPainting: () => void;
+  investigationPhase: InvestigationPhase;
+  investigationCurrentCase: InvestigationCase | null;
+  investigationUnlockedClueIds: string[];
+  investigationAnswers: InvestigationAnswer[];
+  investigationCurrentQuestionIndex: number;
+  investigationScoreDelta: number;
+  investigationBonus: number;
+  investigationCasesCompleted: number;
+  investigationRecentCaseIds: string[];
+  investigationViewerFocus: { x: number; y: number; zoom: number };
+  investigationActiveClueId: string | null;
+  investigationZoomedPaintingId: string | null;
+  startInvestigationCase: (hallId?: ExhibitionHallId) => void;
+  setInvestigationPhase: (phase: InvestigationPhase) => void;
+  unlockInvestigationExhibitClue: (clueId: string) => void;
+  setInvestigationActiveClue: (clueId: string | null) => void;
+  setInvestigationViewerFocus: (focus: { x: number; y: number; zoom: number }) => void;
+  setInvestigationZoomedPainting: (paintingId: string | null) => void;
+  submitInvestigationAnswer: (questionId: string, optionId: string) => void;
+  nextInvestigationQuestion: () => void;
+  nextInvestigationCase: () => void;
+  resetInvestigation: () => void;
 }
 
 const DAILY_THEMES = [
@@ -327,10 +376,13 @@ export const useGameStore = create<GameState>()(
       campWeaknessItemIds: [],
       campCampsCompleted: 0,
       campTotalScore: 0,
-      curatorPhase: "themeSelect",
+      curatorPhase: "hallSelect",
+      curatorSelectedHallId: null,
+      curatorSelectedHall: null,
       curatorCurrentTheme: null,
       curatorAvailablePaintings: [],
       curatorExhibitionSlots: [],
+      curatorPlacedArtworks: [],
       curatorNarrativeText: "",
       curatorEvaluation: null,
       curatorExhibitionsCompleted: 0,
@@ -358,6 +410,18 @@ export const useGameStore = create<GameState>()(
       auctionSettlement: null,
       auctionBidCount: 0,
       auctionLastAIBidTime: 0,
+      investigationPhase: "hallSelect",
+      investigationCurrentCase: null,
+      investigationUnlockedClueIds: [],
+      investigationAnswers: [],
+      investigationCurrentQuestionIndex: 0,
+      investigationScoreDelta: 0,
+      investigationBonus: 0,
+      investigationCasesCompleted: 0,
+      investigationRecentCaseIds: [],
+      investigationViewerFocus: { x: 50, y: 50, zoom: 1 },
+      investigationActiveClueId: null,
+      investigationZoomedPaintingId: null,
 
       setCasePhase: (phase: CasePhase) => set({ casePhase: phase }),
       setFocusedDetail: (index: number | null) => set({ focusedDetailIndex: index }),
@@ -844,12 +908,24 @@ export const useGameStore = create<GameState>()(
 
       setCuratorPhase: (phase: CuratorPhase) => set({ curatorPhase: phase }),
 
+      selectCuratorHall: (hallId: CuratorHallId) => {
+        const hall = getCuratorHallById(hallId);
+        if (!hall) return;
+        set({
+          curatorSelectedHallId: hallId,
+          curatorSelectedHall: hall,
+          curatorPhase: "themeSelect",
+        });
+      },
+
       selectCuratorTheme: (themeId: string) => {
         const theme = getCuratorialThemeById(themeId);
+        const hall = get().curatorSelectedHall;
         if (!theme) return;
         const available = getPaintingsForCuratorTheme(theme);
+        const maxWorks = hall ? Math.min(theme.maxWorks, hall.maxWorks) : theme.maxWorks;
         const slots: CuratorExhibitionSlot[] = Array.from(
-          { length: theme.maxWorks },
+          { length: maxWorks },
           (_, i) => ({
             id: `slot-${i + 1}`,
             paintingId: null,
@@ -859,6 +935,7 @@ export const useGameStore = create<GameState>()(
           curatorCurrentTheme: theme,
           curatorAvailablePaintings: available,
           curatorExhibitionSlots: slots,
+          curatorPlacedArtworks: [],
           curatorNarrativeText: "",
           curatorEvaluation: null,
           curatorPhase: "curating",
@@ -896,24 +973,72 @@ export const useGameStore = create<GameState>()(
         set({ curatorExhibitionSlots: newSlots });
       },
 
+      placeCuratorArtwork: (paintingId: string, positionX: number, positionY: number) => {
+        const { curatorPlacedArtworks, curatorSelectedHall } = get();
+        if (!curatorSelectedHall) return;
+        if (curatorPlacedArtworks.length >= curatorSelectedHall.maxWorks) return;
+        const exists = curatorPlacedArtworks.some((a) => a.paintingId === paintingId);
+        if (exists) return;
+        const newArtwork: CuratorPlacedArtwork = {
+          id: `artwork-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          paintingId,
+          positionX,
+          positionY,
+          rotation: 0,
+        };
+        set({ curatorPlacedArtworks: [...curatorPlacedArtworks, newArtwork] });
+      },
+
+      updateCuratorArtworkPosition: (artworkId: string, positionX: number, positionY: number) => {
+        const { curatorPlacedArtworks } = get();
+        const newArtworks = curatorPlacedArtworks.map((a) =>
+          a.id === artworkId ? { ...a, positionX, positionY } : a
+        );
+        set({ curatorPlacedArtworks: newArtworks });
+      },
+
+      removeCuratorArtwork: (artworkId: string) => {
+        const { curatorPlacedArtworks } = get();
+        const newArtworks = curatorPlacedArtworks.filter((a) => a.id !== artworkId);
+        set({ curatorPlacedArtworks: newArtworks });
+      },
+
+      rotateCuratorArtwork: (artworkId: string, rotation: number) => {
+        const { curatorPlacedArtworks } = get();
+        const newArtworks = curatorPlacedArtworks.map((a) =>
+          a.id === artworkId ? { ...a, rotation } : a
+        );
+        set({ curatorPlacedArtworks: newArtworks });
+      },
+
       setCuratorNarrativeText: (text: string) => set({ curatorNarrativeText: text }),
 
       submitCuratorExhibition: () => {
         const {
           curatorCurrentTheme,
           curatorExhibitionSlots,
+          curatorPlacedArtworks,
           curatorNarrativeText,
+          curatorSelectedHall,
           totalScore,
         } = get();
         if (!curatorCurrentTheme) return;
-        const selectedIds = curatorExhibitionSlots
+
+        const selectedIdsFromSlots = curatorExhibitionSlots
           .filter((s) => s.paintingId)
           .map((s) => s.paintingId!) as string[];
-        if (selectedIds.length < curatorCurrentTheme.minWorks) return;
+        const selectedIdsFromWall = curatorPlacedArtworks.map((a) => a.paintingId);
+        const allSelectedIds = Array.from(new Set([...selectedIdsFromSlots, ...selectedIdsFromWall]));
+
+        const minWorks = curatorSelectedHall
+          ? Math.max(curatorCurrentTheme.minWorks, curatorSelectedHall.minWorks)
+          : curatorCurrentTheme.minWorks;
+
+        if (allSelectedIds.length < minWorks) return;
 
         const evaluation = evaluateCuratorialExhibition(
           curatorCurrentTheme,
-          selectedIds,
+          allSelectedIds,
           curatorNarrativeText
         );
 
@@ -927,10 +1052,13 @@ export const useGameStore = create<GameState>()(
 
       resetCurator: () => {
         set({
-          curatorPhase: "themeSelect",
+          curatorPhase: "hallSelect",
+          curatorSelectedHallId: null,
+          curatorSelectedHall: null,
           curatorCurrentTheme: null,
           curatorAvailablePaintings: [],
           curatorExhibitionSlots: [],
+          curatorPlacedArtworks: [],
           curatorNarrativeText: "",
           curatorEvaluation: null,
         });
@@ -1231,6 +1359,160 @@ export const useGameStore = create<GameState>()(
           auctionSettlement: null,
           auctionBidCount: 0,
           auctionLastAIBidTime: 0,
+        });
+      },
+
+      setInvestigationPhase: (phase: InvestigationPhase) => set({ investigationPhase: phase }),
+
+      startInvestigationCase: (hallId?: ExhibitionHallId) => {
+        const { investigationRecentCaseIds } = get();
+        let caseData: InvestigationCase | null;
+        if (hallId) {
+          const hallCases = INVESTIGATION_CASES.filter(
+            (c) => c.hallId === hallId && !investigationRecentCaseIds.includes(c.id)
+          );
+          caseData = hallCases.length > 0
+            ? hallCases[Math.floor(Math.random() * hallCases.length)]
+            : pickRandomInvestigationCase(investigationRecentCaseIds);
+        } else {
+          caseData = pickRandomInvestigationCase(investigationRecentCaseIds);
+        }
+        if (!caseData) return;
+        const newRecent = [...investigationRecentCaseIds, caseData.id].slice(-5);
+        set({
+          investigationCurrentCase: caseData,
+          investigationPhase: "briefing",
+          investigationUnlockedClueIds: [],
+          investigationAnswers: [],
+          investigationCurrentQuestionIndex: 0,
+          investigationScoreDelta: 0,
+          investigationBonus: 0,
+          investigationRecentCaseIds: newRecent,
+          investigationViewerFocus: { x: 50, y: 50, zoom: 1 },
+          investigationActiveClueId: null,
+          investigationZoomedPaintingId: null,
+        });
+      },
+
+      unlockInvestigationExhibitClue: (clueId: string) => {
+        const { investigationUnlockedClueIds, investigationPhase } = get();
+        if (investigationPhase === "report") return;
+        if (investigationUnlockedClueIds.includes(clueId)) return;
+        set({
+          investigationUnlockedClueIds: [...investigationUnlockedClueIds, clueId],
+          investigationActiveClueId: clueId,
+        });
+      },
+
+      setInvestigationActiveClue: (clueId: string | null) => set({ investigationActiveClueId: clueId }),
+
+      setInvestigationViewerFocus: (focus: { x: number; y: number; zoom: number }) => set({ investigationViewerFocus: focus }),
+
+      setInvestigationZoomedPainting: (paintingId: string | null) => set({ investigationZoomedPaintingId: paintingId }),
+
+      submitInvestigationAnswer: (questionId: string, optionId: string) => {
+        const {
+          investigationCurrentCase,
+          investigationAnswers,
+          investigationUnlockedClueIds,
+          totalScore,
+          streak,
+          bestStreak,
+          unlockedPaintingIds,
+        } = get();
+        if (!investigationCurrentCase) return;
+
+        const question = investigationCurrentCase.questions.find((q) => q.id === questionId);
+        if (!question) return;
+
+        const selectedOption = question.options.find((o) => o.id === optionId);
+        const isCorrect = selectedOption?.isCorrect ?? false;
+
+        const newAnswer: InvestigationAnswer = {
+          questionId,
+          selectedOptionId: optionId,
+          isCorrect,
+        };
+        const newAnswers = [...investigationAnswers, newAnswer];
+
+        const isLastQuestion =
+          investigationCurrentCase.questions.length === newAnswers.length;
+
+        let newTotalScore = totalScore;
+        let newStreak = streak;
+        let newBestStreak = bestStreak;
+        let scoreDelta = 0;
+        let bonus = 0;
+
+        if (isLastQuestion) {
+          const correctCount = newAnswers.filter((a) => a.isCorrect).length;
+          const { delta, bonus: calcBonus } = calculateInvestigationScore(
+            investigationUnlockedClueIds.length,
+            investigationCurrentCase.clues.length,
+            correctCount,
+            investigationCurrentCase.questions.length,
+            investigationCurrentCase.difficulty
+          );
+          scoreDelta = delta;
+          bonus = calcBonus;
+          newTotalScore = Math.max(0, totalScore + delta + calcBonus);
+
+          const allCorrect = correctCount === investigationCurrentCase.questions.length;
+          newStreak = allCorrect ? streak + 1 : 0;
+          newBestStreak = allCorrect ? Math.max(bestStreak, newStreak) : bestStreak;
+
+          const newUnlocked = [...unlockedPaintingIds];
+          investigationCurrentCase.artworks.forEach((a) => {
+            if (!newUnlocked.includes(a.paintingId)) {
+              newUnlocked.push(a.paintingId);
+            }
+          });
+
+          set({
+            investigationAnswers: newAnswers,
+            investigationScoreDelta: scoreDelta,
+            investigationBonus: bonus,
+            investigationPhase: "report",
+            totalScore: newTotalScore,
+            streak: newStreak,
+            bestStreak: newBestStreak,
+            investigationCasesCompleted: get().investigationCasesCompleted + 1,
+            unlockedPaintingIds: newUnlocked,
+          });
+        } else {
+          set({
+            investigationAnswers: newAnswers,
+          });
+        }
+      },
+
+      nextInvestigationQuestion: () => {
+        const { investigationCurrentQuestionIndex, investigationCurrentCase } = get();
+        if (!investigationCurrentCase) return;
+        const nextIndex = investigationCurrentQuestionIndex + 1;
+        if (nextIndex < investigationCurrentCase.questions.length) {
+          set({
+            investigationCurrentQuestionIndex: nextIndex,
+          });
+        }
+      },
+
+      nextInvestigationCase: () => {
+        get().startInvestigationCase();
+      },
+
+      resetInvestigation: () => {
+        set({
+          investigationPhase: "hallSelect",
+          investigationCurrentCase: null,
+          investigationUnlockedClueIds: [],
+          investigationAnswers: [],
+          investigationCurrentQuestionIndex: 0,
+          investigationScoreDelta: 0,
+          investigationBonus: 0,
+          investigationViewerFocus: { x: 50, y: 50, zoom: 1 },
+          investigationActiveClueId: null,
+          investigationZoomedPaintingId: null,
         });
       },
     }),

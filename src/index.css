@@ -404,6 +404,350 @@ body {
     background: linear-gradient(135deg, #1a120b 0%, #2d1f14 50%, #1a120b 100%);
   }
 
+  .hall-wall {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hall-wall::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .hall-wall-classic {
+    background:
+      radial-gradient(ellipse at 50% 0%, rgba(230, 199, 106, 0.15) 0%, transparent 60%),
+      linear-gradient(180deg, #2d4a3e 0%, #1e3328 100%);
+  }
+
+  .hall-wall-classic::before {
+    background:
+      repeating-linear-gradient(
+        90deg,
+        transparent 0px,
+        transparent 40px,
+        rgba(62, 44, 32, 0.03) 40px,
+        rgba(62, 44, 32, 0.03) 41px
+      ),
+      repeating-linear-gradient(
+        0deg,
+        transparent 0px,
+        transparent 40px,
+        rgba(62, 44, 32, 0.03) 40px,
+        rgba(62, 44, 32, 0.03) 41px
+      );
+  }
+
+  .hall-wall-whitecube {
+    background:
+      radial-gradient(ellipse at 50% 0%, rgba(255, 255, 255, 0.8) 0%, transparent 60%),
+      linear-gradient(180deg, #fafafa 0%, #f0f0f0 100%);
+  }
+
+  .hall-wall-whitecube::before {
+    background:
+      repeating-linear-gradient(
+        0deg,
+        transparent 0px,
+        transparent 100px,
+        rgba(0, 0, 0, 0.02) 100px,
+        rgba(0, 0, 0, 0.02) 101px
+      );
+  }
+
+  .hall-wall-loft {
+    background:
+      radial-gradient(ellipse at 50% 0%, rgba(255, 200, 100, 0.12) 0%, transparent 60%),
+      linear-gradient(180deg, #8b4513 0%, #6b3410 50%, #5a2d0e 100%);
+  }
+
+  .hall-wall-loft::before {
+    background:
+      repeating-linear-gradient(
+        0deg,
+        rgba(0, 0, 0, 0.15) 0px,
+        rgba(0, 0, 0, 0.15) 3px,
+        transparent 3px,
+        transparent 60px
+      ),
+      repeating-linear-gradient(
+        90deg,
+        rgba(0, 0, 0, 0.08) 0px,
+        rgba(0, 0, 0, 0.08) 1px,
+        transparent 1px,
+        transparent 120px
+      );
+  }
+
+  .hall-wall-baroque {
+    background:
+      radial-gradient(ellipse at 50% 0%, rgba(255, 215, 0, 0.18) 0%, transparent 55%),
+      linear-gradient(180deg, #5c1a1a 0%, #4a1212 50%, #3d0e0e 100%);
+  }
+
+  .hall-wall-baroque::before {
+    background:
+      repeating-linear-gradient(
+        45deg,
+        transparent 0px,
+        transparent 20px,
+        rgba(184, 134, 11, 0.04) 20px,
+        rgba(184, 134, 11, 0.04) 21px
+      ),
+      repeating-linear-gradient(
+        -45deg,
+        transparent 0px,
+        transparent 20px,
+        rgba(184, 134, 11, 0.04) 20px,
+        rgba(184, 134, 11, 0.04) 21px
+      );
+  }
+
+  .hall-wall-japanese {
+    background:
+      radial-gradient(ellipse at 50% 0%, rgba(255, 240, 200, 0.25) 0%, transparent 60%),
+      linear-gradient(180deg, #f5efe0 0%, #ebe4d0 100%);
+  }
+
+  .hall-wall-japanese::before {
+    background:
+      repeating-linear-gradient(
+        90deg,
+        rgba(180, 160, 120, 0.1) 0px,
+        rgba(180, 160, 120, 0.1) 1px,
+        transparent 1px,
+        transparent 30px
+      );
+  }
+
+  .hall-floor {
+    position: relative;
+  }
+
+  .hall-floor::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .hall-floor-herringbone {
+    background:
+      repeating-linear-gradient(
+        45deg,
+        #8b6914 0px,
+        #8b6914 6px,
+        #a07818 6px,
+        #a07818 12px
+      ),
+      repeating-linear-gradient(
+        -45deg,
+        #6b4f0e 0px,
+        #6b4f0e 6px,
+        #7a5a10 6px,
+        #7a5a10 12px
+      );
+    background-blend-mode: multiply;
+  }
+
+  .hall-floor-concrete {
+    background:
+      radial-gradient(circle at 20% 30%, rgba(120, 120, 120, 0.3) 0%, transparent 5%),
+      radial-gradient(circle at 70% 60%, rgba(100, 100, 100, 0.2) 0%, transparent 4%),
+      radial-gradient(circle at 40% 80%, rgba(140, 140, 140, 0.25) 0%, transparent 6%),
+      linear-gradient(135deg, #c8c8c8 0%, #a8a8a8 100%);
+  }
+
+  .hall-floor-marble {
+    background:
+      radial-gradient(ellipse at 10% 20%, rgba(200, 180, 160, 0.4) 0%, transparent 15%),
+      radial-gradient(ellipse at 80% 70%, rgba(220, 200, 180, 0.3) 0%, transparent 20%),
+      repeating-linear-gradient(
+        35deg,
+        rgba(150, 130, 110, 0.08) 0px,
+        rgba(150, 130, 110, 0.08) 2px,
+        transparent 2px,
+        transparent 8px
+      ),
+      linear-gradient(135deg, #e8dcc8 0%, #d4c4a8 50%, #e0d4bc 100%);
+  }
+
+  .hall-floor-tatami {
+    background:
+      repeating-linear-gradient(
+        0deg,
+        #c4a862 0px,
+        #c4a862 3px,
+        #b89a52 3px,
+        #b89a52 6px
+      ),
+      linear-gradient(180deg, #c9ac60 0%, #b8984c 100%);
+  }
+
+  .painting-frame {
+    position: relative;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+    transition: box-shadow 0.3s ease, transform 0.2s ease;
+  }
+
+  .painting-frame:hover {
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+    z-index: 100;
+  }
+
+  .frame-gold-carved {
+    padding: 14px;
+    background:
+      linear-gradient(135deg, #d4a017 0%, #f0d060 25%, #b8860b 50%, #f0d060 75%, #d4a017 100%);
+    border: 2px solid #8b6914;
+    box-shadow:
+      inset 0 0 0 3px #f5e6a3,
+      inset 0 0 0 5px #8b6914,
+      0 8px 30px rgba(0, 0, 0, 0.4);
+  }
+
+  .frame-dark-wood {
+    padding: 10px;
+    background:
+      repeating-linear-gradient(
+        90deg,
+        #2d1810 0px,
+        #3d2015 2px,
+        #2d1810 4px,
+        #452518 6px
+      );
+    border: 1px solid #1a0f0a;
+    box-shadow:
+      inset 0 0 0 2px #5a3825,
+      0 8px 30px rgba(0, 0, 0, 0.4);
+  }
+
+  .frame-white-modern {
+    padding: 6px;
+    background: #f5f5f5;
+    border: 1px solid #d0d0d0;
+    box-shadow:
+      inset 0 0 0 1px #e0e0e0,
+      0 8px 30px rgba(0, 0, 0, 0.3);
+  }
+
+  .frame-silver-classic {
+    padding: 10px;
+    background:
+      linear-gradient(135deg, #c0c0c0 0%, #e8e8e8 25%, #a0a0a0 50%, #e8e8e8 75%, #c0c0c0 100%);
+    border: 1px solid #707070;
+    box-shadow:
+      inset 0 0 0 2px #d8d8d8,
+      inset 0 0 0 3px #888,
+      0 8px 30px rgba(0, 0, 0, 0.4);
+  }
+
+  .frame-frameless {
+    padding: 0;
+    background: transparent;
+    border: none;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  }
+
+  .painting-mat {
+    background: #f8f4e8;
+    padding: 10px;
+  }
+
+  .spotlight-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 5;
+    background:
+      radial-gradient(ellipse at 20% 40%, rgba(255, 235, 180, 0.08) 0%, transparent 25%),
+      radial-gradient(ellipse at 50% 50%, rgba(255, 240, 200, 0.06) 0%, transparent 30%),
+      radial-gradient(ellipse at 80% 40%, rgba(255, 235, 180, 0.08) 0%, transparent 25%);
+  }
+
+  .track-light {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 20px;
+    background: linear-gradient(180deg, #1a1a1a 0%, transparent 100%);
+    z-index: 10;
+  }
+
+  .track-light-fixture {
+    position: absolute;
+    top: 8px;
+    width: 16px;
+    height: 24px;
+    background: linear-gradient(180deg, #2a2a2a 0%, #1a1a1a 100%);
+    border-radius: 0 0 4px 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  }
+
+  .track-light-fixture::after {
+    content: "";
+    position: absolute;
+    bottom: -40px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80px;
+    height: 80px;
+    background: radial-gradient(ellipse at center top, rgba(255, 220, 150, 0.25) 0%, transparent 70%);
+    filter: blur(8px);
+    pointer-events: none;
+  }
+
+  .baseboard {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 24px;
+    z-index: 8;
+  }
+
+  .baseboard-classic {
+    background: linear-gradient(180deg, #8b6914 0%, #6b4f0e 100%);
+    box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.3);
+  }
+
+  .baseboard-white {
+    background: linear-gradient(180deg, #ffffff 0%, #e0e0e0 100%);
+    box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.15);
+  }
+
+  .baseboard-loft {
+    background: linear-gradient(180deg, #3a3a3a 0%, #1a1a1a 100%);
+    box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.4);
+  }
+
+  .baseboard-japanese {
+    background: linear-gradient(180deg, #8b6914 0%, #5a4408 100%);
+    height: 16px;
+  }
+
+  .droppable-zone {
+    position: relative;
+  }
+
+  .droppable-zone.drag-over {
+    outline: 3px dashed rgba(212, 160, 23, 0.7);
+    outline-offset: -8px;
+  }
+
+  .artwork-drag-handle {
+    cursor: grab;
+    user-select: none;
+  }
+
+  .artwork-drag-handle:active {
+    cursor: grabbing;
+  }
+
   .data-readout {
     font-family: 'Special Elite', 'Courier New', monospace;
     background: linear-gradient(180deg, #0a0a0f 0%, #12121a 100%);

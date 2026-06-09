@@ -501,3 +501,34 @@ export function getMarketEventIcon(type: string): string {
   };
   return map[type] || "📰";
 }
+
+export function calculateInvestigationScore(
+  unlockedClues: number,
+  totalClues: number,
+  correctAnswers: number,
+  totalQuestions: number,
+  difficulty: "normal" | "hard"
+): { delta: number; bonus: number } {
+  const baseScore = 150;
+  const clueDeduction = unlockedClues * 8;
+  let delta = Math.max(40, baseScore - clueDeduction);
+
+  const accuracyRatio = correctAnswers / totalQuestions;
+  delta = Math.round(delta * accuracyRatio);
+
+  const difficultyMultiplier = {
+    normal: 1.0,
+    hard: 1.4,
+  };
+  delta = Math.round(delta * difficultyMultiplier[difficulty]);
+
+  if (correctAnswers === 0) {
+    delta = -Math.round(baseScore * 0.3 * difficultyMultiplier[difficulty]);
+  }
+
+  const allCorrectBonus = correctAnswers === totalQuestions ? 40 : 0;
+  const explorerBonus = unlockedClues >= Math.ceil(totalClues * 0.8) && correctAnswers === totalQuestions ? 30 : 0;
+  const minClueBonus = unlockedClues <= Math.ceil(totalClues * 0.4) && correctAnswers === totalQuestions ? 25 : 0;
+
+  return { delta, bonus: allCorrectBonus + explorerBonus + minClueBonus };
+}

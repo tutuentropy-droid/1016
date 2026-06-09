@@ -1,5 +1,5 @@
 import { useCallback, useEffect } from "react";
-import { Search, Volume2, VolumeX, BookOpen, Network, Gamepad2, TrendingUp, User, Gavel, Target, Palette, Hammer } from "lucide-react";
+import { Search, Volume2, VolumeX, BookOpen, Network, Gamepad2, TrendingUp, User, Gavel, Target, Palette, Hammer, Compass } from "lucide-react";
 import ScoreBoard from "@/components/ScoreBoard";
 import PaintingCard from "@/components/PaintingCard";
 import OptionButton from "@/components/OptionButton";
@@ -20,6 +20,7 @@ import StyleConfusionCamp from "@/components/StyleConfusionCamp";
 import MuseumCuratorPanel from "@/components/MuseumCuratorPanel";
 import TheftPanel from "@/components/TheftPanel";
 import AuctionPanel from "@/components/AuctionPanel";
+import InvestigationPanel from "@/components/InvestigationPanel";
 import { useGameStore, type AppPage, type GameMode } from "@/store/useGameStore";
 import { audioManager } from "@/utils/audioManager";
 import { useState } from "react";
@@ -38,6 +39,7 @@ const MODE_ITEMS: { id: GameMode; label: string; en: string; icon: typeof Gamepa
   { id: "curator", label: "博物馆策展", en: "Museum Curator", icon: Palette, desc: "审美表达：策划主题展览，布局作品，撰写策展说明" },
   { id: "theft", label: "失窃名画追踪", en: "Stolen Art Tracking", icon: Search, desc: "侦探模式：追查失窃名作，地图追踪·时间线推进·锁定真迹" },
   { id: "auction", label: "艺术拍卖会", en: "Art Auction House", icon: Hammer, desc: "投资模式：有限预算竞拍，AI对手抢拍，市场事件影响价值" },
+  { id: "investigation", label: "艺术现场调查", en: "Scene Investigation", icon: Compass, desc: "探索模式：进入虚拟展厅，走动观察·收集线索·推理破案" },
 ];
 
 function GameContent() {
@@ -68,6 +70,10 @@ function GameContent() {
     auctionCurrentLotIndex,
     auctionPaintings,
     auctionSettlement,
+    resetInvestigation,
+    investigationPhase,
+    investigationCurrentCase,
+    investigationCasesCompleted,
   } = useGameStore();
   const [soundEnabled, setSoundEnabled] = useState(true);
 
@@ -122,6 +128,9 @@ function GameContent() {
     }
     if (mode === "auction") {
       resetAuction();
+    }
+    if (mode === "investigation") {
+      resetInvestigation();
     }
   };
 
@@ -311,6 +320,10 @@ function GameContent() {
           <div className="max-w-6xl mx-auto">
             <AuctionPanel />
           </div>
+        ) : gameMode === "investigation" ? (
+          <div className="max-w-6xl mx-auto">
+            <InvestigationPanel />
+          </div>
         ) : (
           <div className="max-w-5xl mx-auto">
             <ForgeryPanel />
@@ -334,6 +347,8 @@ function GameContent() {
               ? auctionSettlement
                 ? `— Art Auction · Final Settlement · ROI: ${(auctionSettlement.returnRate * 100).toFixed(1)}% —`
                 : `— Art Auction · Lot ${auctionCurrentLotIndex + 1}/${auctionPaintings.length} · ${auctionPhase.toUpperCase()} —`
+              : gameMode === "investigation"
+              ? `— Scene Investigation · Case #${investigationCurrentCase?.id.toUpperCase() || "SELECT"} · ${investigationPhase.toUpperCase()} · Solved: ${investigationCasesCompleted} —`
               : `— Forgery Investigation · Case #${forgeryCurrentCase?.id.toUpperCase() || "000"} · Active —`}
           </p>
         </footer>

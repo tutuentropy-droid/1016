@@ -3240,3 +3240,739 @@ export function generateMarketEvent(targetArtist?: string, targetMovement?: stri
     targetMovement: template.type === "styleTrend" ? targetMovement : undefined,
   };
 }
+
+export type ExhibitionHallId = "paris_impressionism" | "surrealism";
+
+export interface ExhibitionClue {
+  id: string;
+  type: "label" | "hidden" | "environment";
+  title: string;
+  titleEn: string;
+  description: string;
+  icon: string;
+  position: { x: number; y: number };
+  requiresZoom?: boolean;
+  linkedPaintingId?: string;
+  hintText: string;
+}
+
+export interface ExhibitionArtwork {
+  paintingId: string;
+  position: { x: number; y: number };
+  size: { w: number; h: number };
+  rotation?: number;
+}
+
+export interface InvestigationQuestion {
+  id: string;
+  question: string;
+  questionEn: string;
+  options: { id: string; label: string; isCorrect: boolean }[];
+  requiredClueIds: string[];
+  explanation: string;
+}
+
+export interface InvestigationCase {
+  id: string;
+  hallId: ExhibitionHallId;
+  title: string;
+  titleEn: string;
+  caseBriefing: string;
+  difficulty: "normal" | "hard";
+  artworks: ExhibitionArtwork[];
+  clues: ExhibitionClue[];
+  questions: InvestigationQuestion[];
+  caseConclusion: string;
+  targetPaintingId?: string;
+}
+
+export interface ExhibitionHall {
+  id: ExhibitionHallId;
+  name: string;
+  nameEn: string;
+  description: string;
+  theme: string;
+  backgroundColor: string;
+  accentColor: string;
+  floorPattern: "parquet" | "marble" | "mosaic";
+  wallColor: string;
+  ambientSound?: string;
+}
+
+export const EXHIBITION_HALLS: ExhibitionHall[] = [
+  {
+    id: "paris_impressionism",
+    name: "巴黎印象派馆",
+    nameEn: "Paris Impressionism Gallery",
+    description: "19世纪的巴黎，光与色的革命在此发生。莫奈、雷诺阿、梵高的杰作在典雅的奥斯曼风格展厅中静静陈列。",
+    theme: "印象派与后印象派大师",
+    backgroundColor: "#f5efe6",
+    accentColor: "#d4a017",
+    floorPattern: "parquet",
+    wallColor: "#e8dcc8",
+  },
+  {
+    id: "surrealism",
+    name: "超现实主义馆",
+    nameEn: "Surrealism Gallery",
+    description: "梦境与潜意识的世界。达利、毕加索、马格里特的作品打破现实边界，带你进入最不可思议的想象空间。",
+    theme: "超现实主义与梦幻世界",
+    backgroundColor: "#1a1a2e",
+    accentColor: "#9d4edd",
+    floorPattern: "marble",
+    wallColor: "#16213e",
+  },
+];
+
+const PARIS_IMPRESSIONISM_CASES: InvestigationCase[] = [
+  {
+    id: "imp_case_001",
+    hallId: "paris_impressionism",
+    title: "日出的真相",
+    titleEn: "The Truth of Sunrise",
+    caseBriefing: "博物馆新入藏了一幅据称是莫奈的《日出·印象》早期草图。馆长请你通过展厅中的线索，判断这幅画的真伪，并找出关键证据。请仔细观察展厅中的每一幅作品、每一个展签，甚至展厅环境中的细节。",
+    difficulty: "normal",
+    artworks: [
+      { paintingId: "3", position: { x: 10, y: 25 }, size: { w: 22, h: 28 } },
+      { paintingId: "11", position: { x: 38, y: 15 }, size: { w: 20, h: 30 } },
+      { paintingId: "12", position: { x: 65, y: 20 }, size: { w: 20, h: 28 } },
+      { paintingId: "1", position: { x: 10, y: 62 }, size: { w: 24, h: 26 } },
+      { paintingId: "13", position: { x: 40, y: 60 }, size: { w: 22, h: 26 } },
+    ],
+    clues: [
+      {
+        id: "clue_imp_001",
+        type: "label",
+        title: "《日出·印象》展签",
+        titleEn: "Impression Sunrise Label",
+        description: "莫奈《日出·印象》，1872年创作于勒阿弗尔港。画面中快速松散的笔触是印象派的标志性技法。此画标题被记者借用嘲讽，从而命名了整个印象派。注意：莫奈在1870年代主要使用松散细碎的笔触捕捉光影瞬间。",
+        icon: "📋",
+        position: { x: 8, y: 38 },
+        linkedPaintingId: "3",
+        hintText: "查看展签了解莫奈的技法特征",
+      },
+      {
+        id: "clue_imp_002",
+        type: "label",
+        title: "《向日葵》展签",
+        titleEn: "Sunflowers Label",
+        description: "梵高《向日葵》，1888年创作于法国阿尔勒。梵高使用浓烈的黄色调与厚涂旋涡笔触表现花瓣质感。注意：梵高与莫奈虽同属印象派脉络，但笔触风格截然不同——梵高的笔触更厚重、更有动势。",
+        icon: "📋",
+        position: { x: 63, y: 35 },
+        linkedPaintingId: "12",
+        hintText: "对比梵高与莫奈的笔触差异",
+      },
+      {
+        id: "clue_imp_003",
+        type: "hidden",
+        title: "墙上的年份刻痕",
+        titleEn: "Year Mark on Wall",
+        description: "展厅墙上一处不易察觉的刻痕写着：「1874 - 首届印象派画展」。这是印象派正式登上历史舞台的年份。《日出·印象》正是在此次展览中亮相的。",
+        icon: "📅",
+        position: { x: 75, y: 8 },
+        requiresZoom: true,
+        hintText: "仔细观察展厅墙壁上方",
+      },
+      {
+        id: "clue_imp_004",
+        type: "hidden",
+        title: "颜料管上的品牌",
+        titleEn: "Paint Tube Brand",
+        description: "展厅角落陈列的复制品颜料管上，印着「Winsor & Newton, London 1870」。这是19世纪中期印象派画家常用的颜料品牌。便携式颜料管的发明让户外写生成为可能，催生了印象派。",
+        icon: "🎨",
+        position: { x: 88, y: 85 },
+        requiresZoom: true,
+        hintText: "看看展厅右下角的陈列物",
+      },
+      {
+        id: "clue_imp_005",
+        type: "environment",
+        title: "展厅光线分析",
+        titleEn: "Gallery Lighting Analysis",
+        description: "这个展厅采用了大型天窗设计，模拟自然光线从上方洒落。印象派画家正是追求在自然光下作画，捕捉不同时刻光线变化的效果。这种展厅设计反映了印象派对「光」的执着追求。",
+        icon: "💡",
+        position: { x: 50, y: 5 },
+        hintText: "观察展厅的采光方式",
+      },
+      {
+        id: "clue_imp_006",
+        type: "label",
+        title: "《睡莲》展签",
+        titleEn: "Water Lilies Label",
+        description: "莫奈《睡莲》，1906年创作于吉维尼花园。晚年莫奈因白内障视力衰退，笔触更加自由奔放，画面趋于抽象。注意：莫奈早期（1870年代）与晚期（1900年代后）的笔触风格有明显差异。",
+        icon: "📋",
+        position: { x: 36, y: 28 },
+        linkedPaintingId: "11",
+        hintText: "对比莫奈不同时期的风格",
+      },
+      {
+        id: "clue_imp_007",
+        type: "hidden",
+        title: "访客留言簿",
+        titleEn: "Guest Book",
+        description: "展厅入口的访客留言簿中有这样一段话：「看到莫奈画中的小船，让我想起勒阿弗尔港的清晨，那雾气中的红日，真是一生难忘。——巴黎画商 P. Durand-Ruel, 1874」。迪朗-吕埃尔是印象派最重要的赞助人。",
+        icon: "📖",
+        position: { x: 3, y: 90 },
+        requiresZoom: true,
+        hintText: "展厅左下角有一本留言簿",
+      },
+    ],
+    questions: [
+      {
+        id: "q_imp_1",
+        question: "《日出·印象》是哪一年创作的？",
+        questionEn: "When was Impression, Sunrise painted?",
+        options: [
+          { id: "a", label: "1865年", isCorrect: false },
+          { id: "b", label: "1872年", isCorrect: true },
+          { id: "c", label: "1885年", isCorrect: false },
+          { id: "d", label: "1900年", isCorrect: false },
+        ],
+        requiredClueIds: ["clue_imp_001"],
+        explanation: "展签明确标注了《日出·印象》创作于1872年。",
+      },
+      {
+        id: "q_imp_2",
+        question: "以下哪项最能区分莫奈与梵高的笔触风格？",
+        questionEn: "What best distinguishes Monet's brushstroke from Van Gogh's?",
+        options: [
+          { id: "a", label: "莫奈使用厚重的旋涡状笔触", isCorrect: false },
+          { id: "b", label: "莫奈使用快速松散的细碎笔触", isCorrect: true },
+          { id: "c", label: "两人笔触完全相同", isCorrect: false },
+          { id: "d", label: "梵高使用平滑细腻的渲染", isCorrect: false },
+        ],
+        requiredClueIds: ["clue_imp_001", "clue_imp_002"],
+        explanation: "莫奈的《日出·印象》展签提到他使用快速松散的笔触，而梵高《向日葵》展签提到梵高使用厚涂旋涡笔触，两者风格不同。",
+      },
+      {
+        id: "q_imp_3",
+        question: "印象派画家能够进行户外写生，得益于什么发明？",
+        questionEn: "What invention enabled Impressionists to paint outdoors?",
+        options: [
+          { id: "a", label: "照相机", isCorrect: false },
+          { id: "b", label: "便携式颜料管", isCorrect: true },
+          { id: "c", label: "合成颜料", isCorrect: false },
+          { id: "d", label: "画架", isCorrect: false },
+        ],
+        requiredClueIds: ["clue_imp_004"],
+        explanation: "颜料管品牌线索中提到：便携式颜料管的发明让户外写生成为可能，催生了印象派。",
+      },
+    ],
+    caseConclusion: "经过调查，这幅《日出·印象》早期草图为真品。关键证据包括：1) 1872年的创作时间与莫奈勒阿弗尔港时期吻合；2) 快速松散的细碎笔触符合莫奈早期印象派风格，与梵高的厚涂旋涡笔触有明显区别；3) 画商迪朗-吕埃尔的留言提供了来源链证据；4) 便携式颜料管的普及使户外写生成为可能。",
+  },
+  {
+    id: "imp_case_002",
+    hallId: "paris_impressionism",
+    title: "星空的归属",
+    titleEn: "The Ownership of Starry Night",
+    caseBriefing: "一幅标注为「莫奈作品」的星空油画引起了你的注意。你需要通过展厅中的线索，判断这幅画的真实作者，并找出支撑你结论的所有证据。",
+    difficulty: "hard",
+    artworks: [
+      { paintingId: "1", position: { x: 40, y: 22 }, size: { w: 24, h: 28 } },
+      { paintingId: "12", position: { x: 10, y: 60 }, size: { w: 20, h: 28 } },
+      { paintingId: "3", position: { x: 68, y: 60 }, size: { w: 22, h: 26 } },
+    ],
+    clues: [
+      {
+        id: "clue_imp2_001",
+        type: "label",
+        title: "《星月夜》展签",
+        titleEn: "Starry Night Label",
+        description: "文森特·梵高《星月夜》，1889年创作于圣雷米精神病院。以旋涡状的笔触描绘夜空中闪烁的星辰与明月，是后印象派的代表作。",
+        icon: "📋",
+        position: { x: 38, y: 38 },
+        linkedPaintingId: "1",
+        hintText: "仔细阅读画作旁的展签",
+      },
+      {
+        id: "clue_imp2_002",
+        type: "hidden",
+        title: "画家写给弟弟的信",
+        titleEn: "Letter to Brother",
+        description: "展厅展示的一封手写信复印件：「亲爱的提奥，我在病房窗口看到了美妙的星空，那些旋涡状的星云让我着迷。我必须把它们画下来……——文森特，1889年6月于圣雷米」",
+        icon: "✉️",
+        position: { x: 15, y: 10 },
+        requiresZoom: true,
+        hintText: "展厅左上角有一封信件展品",
+      },
+      {
+        id: "clue_imp2_003",
+        type: "label",
+        title: "莫奈与梵高风格对比",
+        titleEn: "Monet vs Van Gogh Style",
+        description: "莫奈（印象派）：笔触细碎松散，追求光影瞬间变化，色彩明亮自然。梵高（后印象派）：笔触厚重呈旋涡状，色彩强烈主观，表达内心情感。",
+        icon: "↔️",
+        position: { x: 70, y: 10 },
+        hintText: "右侧墙上有风格对比说明",
+      },
+      {
+        id: "clue_imp2_004",
+        type: "hidden",
+        title: "调色板上的颜料残迹",
+        titleEn: "Paint Residue on Palette",
+        description: "一个复制品调色板展示在玻璃柜中。颜料分析显示：大量使用钴蓝、群青、铬黄，色彩饱和度极高。注：莫奈的调色板颜色更接近自然中的真实色彩，而梵高偏爱使用更强烈、饱和度更高的互补色。",
+        icon: "🎨",
+        position: { x: 85, y: 35 },
+        requiresZoom: true,
+        hintText: "右侧有一个玻璃柜陈列调色板",
+      },
+      {
+        id: "clue_imp2_005",
+        type: "environment",
+        title: "柏树的位置",
+        titleEn: "Position of Cypress Tree",
+        description: "展厅导览图中标记了「阿尔勒-圣雷米地区常见植物：柏树」。柏树在梵高的画中经常出现，如黑色火焰般扭曲升腾。而莫奈的风景画中极少出现柏树这一元素。",
+        icon: "🌲",
+        position: { x: 5, y: 45 },
+        hintText: "左侧导览图中关于植物的信息",
+      },
+    ],
+    questions: [
+      {
+        id: "q_imp2_1",
+        question: "《星月夜》的真实作者是谁？",
+        questionEn: "Who is the real artist of The Starry Night?",
+        options: [
+          { id: "a", label: "克劳德·莫奈", isCorrect: false },
+          { id: "b", label: "文森特·梵高", isCorrect: true },
+          { id: "c", label: "皮埃尔·雷诺阿", isCorrect: false },
+          { id: "d", label: "保罗·塞尚", isCorrect: false },
+        ],
+        requiredClueIds: ["clue_imp2_001"],
+        explanation: "展签明确标注《星月夜》是文森特·梵高的作品。",
+      },
+      {
+        id: "q_imp2_2",
+        question: "以下哪项不是梵高的风格特征？",
+        questionEn: "Which is NOT a Van Gogh style feature?",
+        options: [
+          { id: "a", label: "旋涡状厚涂笔触", isCorrect: false },
+          { id: "b", label: "色彩饱和度极高", isCorrect: false },
+          { id: "c", label: "细碎松散的笔触捕捉光影瞬间", isCorrect: true },
+          { id: "d", label: "画面中常出现扭曲的柏树", isCorrect: false },
+        ],
+        requiredClueIds: ["clue_imp2_003", "clue_imp2_004", "clue_imp2_005"],
+        explanation: "细碎松散的笔触是莫奈的特征，而非梵高的。梵高的特征是旋涡状厚涂笔触、高饱和度色彩和柏树元素。",
+      },
+      {
+        id: "q_imp2_3",
+        question: "《星月夜》是画家在什么状态下创作的？",
+        questionEn: "Under what circumstances was The Starry Night painted?",
+        options: [
+          { id: "a", label: "巴黎公寓中", isCorrect: false },
+          { id: "b", label: "阿尔勒的黄房子里", isCorrect: false },
+          { id: "c", label: "圣雷米精神病院病房窗口", isCorrect: true },
+          { id: "d", label: "吉维尼花园中", isCorrect: false },
+        ],
+        requiredClueIds: ["clue_imp2_002"],
+        explanation: "画家写给弟弟提奥的信中明确提到「我在病房窗口看到了美妙的星空」，时间是1889年6月于圣雷米。",
+      },
+    ],
+    caseConclusion: "这幅星空画作的真实作者是文森特·梵高，而非莫奈。关键证据：1) 展签明确标注作者为梵高；2) 写给弟弟提奥的信证实是在圣雷米精神病院期间创作；3) 旋涡状厚涂笔触、高饱和度色彩都是梵高的典型特征，与莫奈的细碎松散笔触完全不同；4) 画中的柏树元素也是梵高作品的常见特征。",
+  },
+];
+
+const SURREALISM_CASES: InvestigationCase[] = [
+  {
+    id: "sur_case_001",
+    hallId: "surrealism",
+    title: "融化时钟的秘密",
+    titleEn: "The Secret of Melting Clocks",
+    caseBriefing: "超现实主义馆新入藏了一幅据称是达利的《记忆的永恒》草稿。请你通过展厅中的线索，确认这幅作品的归属，并回答关于超现实主义艺术的几个问题。",
+    difficulty: "normal",
+    artworks: [
+      { paintingId: "6", position: { x: 15, y: 25 }, size: { w: 22, h: 26 } },
+      { paintingId: "4", position: { x: 60, y: 20 }, size: { w: 26, h: 28 } },
+      { paintingId: "9", position: { x: 38, y: 62 }, size: { w: 20, h: 28 } },
+    ],
+    clues: [
+      {
+        id: "clue_sur_001",
+        type: "label",
+        title: "《记忆的永恒》展签",
+        titleEn: "Persistence of Memory Label",
+        description: "萨尔瓦多·达利《记忆的永恒》，1931年。超现实主义代表作。达利运用「偏执批判法」，将潜意识中的梦境画面以精细写实的技法呈现。软塌塌的时钟成为标志性意象。",
+        icon: "📋",
+        position: { x: 12, y: 40 },
+        linkedPaintingId: "6",
+        hintText: "查看达利作品的展签",
+      },
+      {
+        id: "clue_sur_002",
+        type: "label",
+        title: "《格尔尼卡》展签",
+        titleEn: "Guernica Label",
+        description: "巴勃罗·毕加索《格尔尼卡》，1937年。以立体主义手法描绘西班牙内战的暴行。毕加索是立体主义创始人，后期作品也带有超现实主义元素。注意：立体主义与超现实主义是两个不同的流派。",
+        icon: "📋",
+        position: { x: 58, y: 35 },
+        linkedPaintingId: "4",
+        hintText: "查看毕加索作品的展签",
+      },
+      {
+        id: "clue_sur_003",
+        type: "hidden",
+        title: "达利的小胡子模型",
+        titleEn: "Dali's Mustache Model",
+        description: "玻璃柜中陈列着达利标志性的翘胡子复制品，下面的说明写道：「达利以夸张的小胡子和怪异行为著称，这一形象本身就是超现实主义的体现——将日常事物变得荒诞离奇。」",
+        icon: "👨",
+        position: { x: 88, y: 55 },
+        requiresZoom: true,
+        hintText: "右侧角落的玻璃柜中",
+      },
+      {
+        id: "clue_sur_004",
+        type: "hidden",
+        title: "弗洛伊德的著作",
+        titleEn: "Freud's Book",
+        description: "展台上放着西格蒙德·弗洛伊德《梦的解析》的原版复制本。书中有关潜意识和梦境的理论深刻影响了超现实主义艺术家。达利曾说：「超现实主义就是我。」",
+        icon: "📕",
+        position: { x: 8, y: 85 },
+        requiresZoom: true,
+        hintText: "左下角展台上有一本书",
+      },
+      {
+        id: "clue_sur_005",
+        type: "environment",
+        title: "加泰罗尼亚海岸",
+        titleEn: "Catalan Coast",
+        description: "展厅背景墙上的风景图展示了西班牙加泰罗尼亚地区的海岸悬崖。注：达利的家乡就在这里，他画中的风景（如《记忆的永恒》背景）常常以家乡的海岸线为原型。",
+        icon: "🏖️",
+        position: { x: 50, y: 5 },
+        hintText: "看看展厅背景墙上的风景",
+      },
+      {
+        id: "clue_sur_006",
+        type: "label",
+        title: "《呐喊》展签",
+        titleEn: "The Scream Label",
+        description: "爱德华·蒙克《呐喊》，1893年。表现主义先驱之作，以扭曲的线条和血红色的天空传达存在的焦虑。注：表现主义与超现实主义虽都强调内心情感，但超现实主义更侧重潜意识与梦境。",
+        icon: "📋",
+        position: { x: 35, y: 78 },
+        linkedPaintingId: "9",
+        hintText: "查看蒙克作品的展签",
+      },
+    ],
+    questions: [
+      {
+        id: "q_sur_1",
+        question: "《记忆的永恒》的作者是？",
+        questionEn: "Who painted The Persistence of Memory?",
+        options: [
+          { id: "a", label: "巴勃罗·毕加索", isCorrect: false },
+          { id: "b", label: "萨尔瓦多·达利", isCorrect: true },
+          { id: "c", label: "爱德华·蒙克", isCorrect: false },
+          { id: "d", label: "雷内·马格里特", isCorrect: false },
+        ],
+        requiredClueIds: ["clue_sur_001"],
+        explanation: "展签明确标注《记忆的永恒》是萨尔瓦多·达利的作品。",
+      },
+      {
+        id: "q_sur_2",
+        question: "超现实主义运动受到了哪位思想家的深刻影响？",
+        questionEn: "Which thinker deeply influenced Surrealism?",
+        options: [
+          { id: "a", label: "卡尔·马克思", isCorrect: false },
+          { id: "b", label: "西格蒙德·弗洛伊德", isCorrect: true },
+          { id: "c", label: "让-保罗·萨特", isCorrect: false },
+          { id: "d", label: "弗里德里希·尼采", isCorrect: false },
+        ],
+        requiredClueIds: ["clue_sur_004"],
+        explanation: "展厅中陈列的《梦的解析》表明，弗洛伊德关于潜意识和梦境的理论深刻影响了超现实主义艺术家。",
+      },
+      {
+        id: "q_sur_3",
+        question: "达利用来表现潜意识画面的独特方法被称为？",
+        questionEn: "What is Dali's unique method for depicting subconscious imagery called?",
+        options: [
+          { id: "a", label: "偏执批判法", isCorrect: true },
+          { id: "b", label: "自动写作", isCorrect: false },
+          { id: "c", label: "立体解构", isCorrect: false },
+          { id: "d", label: "精细写实主义", isCorrect: false },
+        ],
+        requiredClueIds: ["clue_sur_001"],
+        explanation: "达利的展签中提到他运用「偏执批判法」将潜意识中的梦境画面以精细写实的技法呈现。",
+      },
+    ],
+    caseConclusion: "《记忆的永恒》草稿确认为达利真品。关键证据：1) 展签明确标注作者为萨尔瓦多·达利；2) 画中加泰罗尼亚海岸风景与达利家乡吻合；3) 作品使用的「偏执批判法」是达利独特的创作方法；4) 弗洛伊德的潜意识理论是超现实主义的思想基础，达利正是以此创作融化时钟等梦幻意象。",
+  },
+];
+
+export const INVESTIGATION_CASES: InvestigationCase[] = [
+  ...PARIS_IMPRESSIONISM_CASES,
+  ...SURREALISM_CASES,
+];
+
+export function getAllInvestigationCases(): InvestigationCase[] {
+  return INVESTIGATION_CASES;
+}
+
+export function getInvestigationCasesByHall(hallId: ExhibitionHallId): InvestigationCase[] {
+  return INVESTIGATION_CASES.filter((c) => c.hallId === hallId);
+}
+
+export function getInvestigationCaseById(id: string): InvestigationCase | undefined {
+  return INVESTIGATION_CASES.find((c) => c.id === id);
+}
+
+export function getExhibitionHallById(id: ExhibitionHallId): ExhibitionHall | undefined {
+  return EXHIBITION_HALLS.find((h) => h.id === id);
+}
+
+export function getAllExhibitionHalls(): ExhibitionHall[] {
+  return EXHIBITION_HALLS;
+}
+
+export function pickRandomInvestigationCase(
+  excludeIds: string[] = []
+): InvestigationCase | null {
+  const pool =
+    excludeIds.length >= INVESTIGATION_CASES.length
+      ? INVESTIGATION_CASES
+      : INVESTIGATION_CASES.filter((c) => !excludeIds.includes(c.id));
+  if (pool.length === 0) return null;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+export type FrameStyle = "gold_ornate" | "dark_wood" | "white_modern" | "silver_classic" | "no_frame";
+
+export interface PaintingPhysicalSize {
+  widthCm: number;
+  heightCm: number;
+  frameStyle: FrameStyle;
+  frameWidthCm: number;
+}
+
+export const PAINTING_PHYSICAL_SIZES: Record<string, PaintingPhysicalSize> = {
+  "1": { widthCm: 73.7, heightCm: 92.1, frameStyle: "gold_ornate", frameWidthCm: 8 },
+  "2": { widthCm: 53, heightCm: 77, frameStyle: "dark_wood", frameWidthCm: 6 },
+  "3": { widthCm: 48, heightCm: 63, frameStyle: "gold_ornate", frameWidthCm: 7 },
+  "4": { widthCm: 349.3, heightCm: 776.6, frameStyle: "no_frame", frameWidthCm: 0 },
+  "5": { widthCm: 44.5, heightCm: 39, frameStyle: "silver_classic", frameWidthCm: 5 },
+  "6": { widthCm: 24.1, heightCm: 33, frameStyle: "dark_wood", frameWidthCm: 5 },
+  "7": { widthCm: 180, heightCm: 180, frameStyle: "gold_ornate", frameWidthCm: 10 },
+  "8": { widthCm: 280, heightCm: 570, frameStyle: "no_frame", frameWidthCm: 0 },
+  "9": { widthCm: 73, heightCm: 91, frameStyle: "dark_wood", frameWidthCm: 6 },
+  "10": { widthCm: 363, heightCm: 437, frameStyle: "gold_ornate", frameWidthCm: 12 },
+  "11": { widthCm: 89.9, heightCm: 94.1, frameStyle: "white_modern", frameWidthCm: 4 },
+  "12": { widthCm: 92.1, heightCm: 73, frameStyle: "gold_ornate", frameWidthCm: 7 },
+  "13": { widthCm: 82, heightCm: 114, frameStyle: "dark_wood", frameWidthCm: 6 },
+  "14": { widthCm: 42, heightCm: 34, frameStyle: "gold_ornate", frameWidthCm: 5 },
+  "15": { widthCm: 243.9, heightCm: 233.7, frameStyle: "no_frame", frameWidthCm: 0 },
+  "16": { widthCm: 60.96, heightCm: 122.55, frameStyle: "dark_wood", frameWidthCm: 6 },
+  "17": { widthCm: 100, heightCm: 81.3, frameStyle: "gold_ornate", frameWidthCm: 7 },
+  "18": { widthCm: 27, heightCm: 35, frameStyle: "dark_wood", frameWidthCm: 5 },
+  "19": { widthCm: 100, heightCm: 65, frameStyle: "gold_ornate", frameWidthCm: 8 },
+  "20": { widthCm: 200, heightCm: 600, frameStyle: "no_frame", frameWidthCm: 0 },
+};
+
+export const FRAME_STYLE_LABELS: Record<PaintingPhysicalSize["frameStyle"], string> = {
+  gold_ornate: "金色雕花画框",
+  dark_wood: "深色实木画框",
+  white_modern: "白色现代画框",
+  silver_classic: "银色经典画框",
+  no_frame: "无框画布",
+};
+
+export type CuratorHallId =
+  | "classic_gallery"
+  | "white_cube"
+  | "loft_industrial"
+  | "baroque_salon"
+  | "japanese_tearoom";
+
+export type FloorStyle = "herringbone_wood" | "concrete" | "marble" | "tatami";
+export type LightStyle = "warm_track" | "cool_spotlight" | "industrial_pendant" | "crystal_chandelier" | "paper_lantern";
+
+export interface CuratorHallLayout {
+  id: CuratorHallId;
+  name: string;
+  nameEn: string;
+  description: string;
+  wallColor: string;
+  wallAccent: string;
+  floorPattern: "parquet" | "marble" | "concrete" | "mosaic" | "tatami";
+  floorStyle: FloorStyle;
+  floorColor: string;
+  ceilingHeight: number;
+  spotlights: "warm_track" | "recessed_white" | "industrial_pendant" | "crystal_chandelier" | "paper_lantern";
+  lightStyle: LightStyle;
+  wallTexture: "smooth" | "linen" | "brick" | "damask" | "washi";
+  maxWorks: number;
+  minWorks: number;
+  roomWidthCm: number;
+  roomDepthCm: number;
+  displayWallLengthCm: number;
+  icon: string;
+  atmosphere: "elegant" | "minimal" | "industrial" | "luxurious" | "serene";
+  recommendedTheme: string[];
+  tags: string[];
+}
+
+export const CURATOR_HALL_LAYOUTS: CuratorHallLayout[] = [
+  {
+    id: "classic_gallery",
+    name: "经典美术馆",
+    nameEn: "Classic Gallery",
+    description: "典雅的传统美术馆空间，深绿色天鹅绒墙面搭配人字拼花木地板，暖色调轨道射灯营造庄重氛围，最适合展示古典大师与印象派作品。",
+    wallColor: "#1b3a2f",
+    wallAccent: "#2d5a4a",
+    floorPattern: "parquet",
+    floorStyle: "herringbone_wood",
+    floorColor: "#6b4423",
+    ceilingHeight: 450,
+    spotlights: "warm_track",
+    lightStyle: "warm_track",
+    wallTexture: "linen",
+    maxWorks: 8,
+    minWorks: 3,
+    roomWidthCm: 1200,
+    roomDepthCm: 800,
+    displayWallLengthCm: 1000,
+    icon: "🏛️",
+    atmosphere: "elegant",
+    recommendedTheme: ["golden-era", "light-and-color", "lonely-painter"],
+    tags: ["古典", "典雅", "印象派"],
+  },
+  {
+    id: "white_cube",
+    name: "白立方展厅",
+    nameEn: "White Cube",
+    description: "极简主义的现代展厅，纯净的白色墙面与无缝混凝土地面，嵌入式冷白光筒灯让作品本身成为绝对主角，完美匹配现代与当代艺术。",
+    wallColor: "#fafafa",
+    wallAccent: "#f0f0f0",
+    floorPattern: "concrete",
+    floorStyle: "concrete",
+    floorColor: "#e8e8e8",
+    ceilingHeight: 500,
+    spotlights: "recessed_white",
+    lightStyle: "cool_spotlight",
+    wallTexture: "smooth",
+    maxWorks: 10,
+    minWorks: 4,
+    roomWidthCm: 1500,
+    roomDepthCm: 1000,
+    displayWallLengthCm: 1300,
+    icon: "⬜",
+    atmosphere: "minimal",
+    recommendedTheme: ["paris-revolution", "dreams-and-mystery"],
+    tags: ["现代", "极简", "当代艺术"],
+  },
+  {
+    id: "loft_industrial",
+    name: "工业风Loft",
+    nameEn: "Industrial Loft",
+    description: "裸露的红砖墙面与粗犷的水泥地面，黑色工业吊灯投射出戏剧化光线，充满历史厚重感的仓库改造空间，适合表现主义与具有张力的作品。",
+    wallColor: "#8b4513",
+    wallAccent: "#a0522d",
+    floorPattern: "concrete",
+    floorStyle: "concrete",
+    floorColor: "#4a4a4a",
+    ceilingHeight: 600,
+    spotlights: "industrial_pendant",
+    lightStyle: "industrial_pendant",
+    wallTexture: "brick",
+    maxWorks: 7,
+    minWorks: 3,
+    roomWidthCm: 1400,
+    roomDepthCm: 900,
+    displayWallLengthCm: 1200,
+    icon: "🏭",
+    atmosphere: "industrial",
+    recommendedTheme: ["lonely-painter", "paris-revolution", "dreams-and-mystery"],
+    tags: ["工业", "复古", "表现主义"],
+  },
+  {
+    id: "baroque_salon",
+    name: "巴洛克沙龙",
+    nameEn: "Baroque Salon",
+    description: "华丽的洛可可风格展厅，锦缎暗纹墙面搭配大理石地板，水晶吊灯流光溢彩，沙龙式密集悬挂方式尽显奢华，适合古典与金色时期作品。",
+    wallColor: "#3a1628",
+    wallAccent: "#5c2340",
+    floorPattern: "marble",
+    floorStyle: "marble",
+    floorColor: "#f5f5dc",
+    ceilingHeight: 550,
+    spotlights: "crystal_chandelier",
+    lightStyle: "crystal_chandelier",
+    wallTexture: "damask",
+    maxWorks: 12,
+    minWorks: 5,
+    roomWidthCm: 1300,
+    roomDepthCm: 900,
+    displayWallLengthCm: 1100,
+    icon: "👑",
+    atmosphere: "luxurious",
+    recommendedTheme: ["golden-era", "love-and-tenderness"],
+    tags: ["奢华", "古典", "沙龙"],
+  },
+  {
+    id: "japanese_tearoom",
+    name: "和式茶室",
+    nameEn: "Japanese Tearoom",
+    description: "宁静的和式空间，淡雅的和纸墙面与榻榻米地面，柔和的纸灯笼营造出禅意氛围，适合呈现具有东方韵味与静谧气质的作品。",
+    wallColor: "#f5f5dc",
+    wallAccent: "#e8e4c9",
+    floorPattern: "tatami",
+    floorStyle: "tatami",
+    floorColor: "#c4a35a",
+    ceilingHeight: 300,
+    spotlights: "paper_lantern",
+    lightStyle: "paper_lantern",
+    wallTexture: "washi",
+    maxWorks: 6,
+    minWorks: 2,
+    roomWidthCm: 900,
+    roomDepthCm: 700,
+    displayWallLengthCm: 800,
+    icon: "🎋",
+    atmosphere: "serene",
+    recommendedTheme: ["dreams-and-mystery", "lonely-painter", "light-and-color"],
+    tags: ["和风", "禅意", "静谧"],
+  },
+];
+
+export interface CuratorPlacedArtwork {
+  id: string;
+  paintingId: string;
+  positionX: number;
+  positionY: number;
+  rotation: number;
+}
+
+export function getCuratorHallById(id: CuratorHallId): CuratorHallLayout | undefined {
+  return CURATOR_HALL_LAYOUTS.find((h) => h.id === id);
+}
+
+export function getAllCuratorHalls(): CuratorHallLayout[] {
+  return [...CURATOR_HALL_LAYOUTS];
+}
+
+export function getPaintingSize(paintingId: string): PaintingPhysicalSize {
+  return (
+    PAINTING_PHYSICAL_SIZES[paintingId] || {
+      widthCm: 60,
+      heightCm: 80,
+      frameStyle: "gold_ornate" as const,
+      frameWidthCm: 6,
+    }
+  );
+}
+
+export function calculatePaintingDisplayScale(
+  paintingSize: PaintingPhysicalSize,
+  hall: CuratorHallLayout
+): { widthPct: number; heightPct: number } {
+  const totalWidth = paintingSize.widthCm + paintingSize.frameWidthCm * 2;
+  const totalHeight = paintingSize.heightCm + paintingSize.frameWidthCm * 2;
+  const wallLength = hall.displayWallLengthCm;
+  const maxDisplayHeight = hall.ceilingHeight * 0.6;
+
+  const scaleByWidth = totalWidth / wallLength;
+  const scaleByHeight = totalHeight / maxDisplayHeight;
+  const scale = Math.min(scaleByWidth, scaleByHeight, 0.3);
+
+  return {
+    widthPct: Math.max(8, scale * 100 * 3),
+    heightPct: Math.max(8, scale * 100 * 3 * (totalHeight / totalWidth)),
+  };
+}
